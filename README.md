@@ -4,6 +4,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/yt-transcript-rs.svg)](https://crates.io/crates/yt-transcript-rs)
 [![Documentation](https://docs.rs/yt-transcript-rs/badge.svg)](https://docs.rs/yt-transcript-rs)
+[![codecov](https://codecov.io/gh/akinsella/yt-transcript-rs/graph/badge.svg?token=08S6M9DDM9)](https://codecov.io/gh/akinsella/yt-transcript-rs)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 This project is heavily inspired by the Python module [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) originally developed by [Jonas Depoix](https://github.com/jdepoix).

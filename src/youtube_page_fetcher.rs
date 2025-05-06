@@ -85,7 +85,8 @@ impl YoutubePageFetcher {
     ///     .unwrap();
     ///     
     /// let proxy_config = Box::new(GenericProxyConfig::new(
-    ///     "http://user:pass@proxy.example.com:8080"
+    ///     Some("http://user:pass@proxy.example.com:8080".to_string()),
+    ///     None
     /// ).unwrap());
     ///
     /// let proxy_fetcher = YoutubePageFetcher::new(custom_client, Some(proxy_config));

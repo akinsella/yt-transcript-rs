@@ -248,7 +248,7 @@ impl PlayabilityAsserter {
     /// assert_eq!(reasons[0], "This video has been removed by the uploader");
     /// # }
     /// ```
-    fn extract_subreasons(player_data: &serde_json::Value) -> Vec<String> {
+    pub fn extract_subreasons(player_data: &serde_json::Value) -> Vec<String> {
         let mut sub_reasons = Vec::new();
 
         if let Some(messages) = player_data

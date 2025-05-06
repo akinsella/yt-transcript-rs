@@ -212,7 +212,7 @@ impl TranscriptParser {
     /// let result = parser.process_with_formatting(input);
     /// // Result would be "<b>Bold</b> and span and <i>italic</i>"
     /// ```
-    fn process_with_formatting(&self, text: &str) -> String {
+    pub fn process_with_formatting(&self, text: &str) -> String {
         let mut result = text.to_string();
 
         // First pass: collect all HTML tags
