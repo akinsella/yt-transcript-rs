@@ -1,0 +1,28 @@
+[package]
+name = "yt_transcript_rs"
+version = "0.1.0"
+authors = ["Alexis Kinsella <alexis.kinsella@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/akinsella/yt-transcript-rs"
+edition = "2024"
+rust-version = "1.86"
+
+[dependencies]
+
+anyhow = "1.0.97"
+
+futures-util = "0.3"
+
+serde = { version = "1.0.152", features = ["alloc", "derive", "serde_derive"] }
+serde_json = "1.0.94"
+
+futures = "0.3.31"
+tokio = { version = "1.44.1", features = ["full"] }
+
+chrono = { version = "0.4.40", features = ["serde"] }
+thiserror = "2.0.12"
+reqwest = { version = "0.12.15", features = ["json", "blocking", "cookies"] }
+
+regex = "1.10.4"
+roxmltree = "0.19.0"
+html-escape = "0.2.13"

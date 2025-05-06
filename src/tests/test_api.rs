@@ -1,0 +1,289 @@
+use super::test_utils::{create_api, setup, MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID};
+
+use crate::errors::CouldNotRetrieveTranscriptReason;
+
+#[tokio::test]
+async fn test_list_transcripts() {
+    setup();
+    let api = create_api();
+
+    // Test with a known video that has multiple languages
+    let transcript_list = api.list_transcripts(MULTILANG_VIDEO_ID).await;
+
+    // Check if we got a valid result or a specific error
+    if let Ok(transcript_list) = transcript_list {
+        assert_eq!(transcript_list.video_id, MULTILANG_VIDEO_ID);
+
+        // Ensure we can iterate over the transcript list
+        let mut found_transcripts = false;
+        for transcript in &transcript_list {
+            // We should have at least one transcript
+            found_transcripts = true;
+            // Each transcript should have the same video ID
+            assert_eq!(transcript.video_id, MULTILANG_VIDEO_ID);
+            // Language code should not be empty
+            assert!(!transcript.language_code.is_empty());
+            // Language name should not be empty
+            assert!(!transcript.language.is_empty());
+        }
+
+        assert!(found_transcripts, "No transcripts found in the list");
+    } else {
+        let error = transcript_list.unwrap_err();
+        // The API can fail with YouTubeDataUnparsable, which is acceptable for tests
+        // since YouTube regularly changes their API
+        match error.reason {
+            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) => {
+                // This is an acceptable error, test passes
+            }
+            _ => {
+                panic!("Unexpected error: {:?}", error);
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn test_find_transcript() {
+    setup();
+    let api = create_api();
+
+    // Get the list of transcripts
+    let transcript_list_result = api.list_transcripts(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &transcript_list_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    let transcript_list = match transcript_list_result {
+        Ok(list) => list,
+        Err(e) => panic!("Failed to get transcript list: {:?}", e),
+    };
+
+    // Try to find an English transcript
+    let transcript = transcript_list.find_transcript(&["en"]);
+    assert!(transcript.is_ok(), "Failed to find English transcript");
+
+    // Try to find with fallback languages
+    let transcript = transcript_list.find_transcript(&["non-existent", "en"]);
+    assert!(
+        transcript.is_ok(),
+        "Failed to find transcript with fallback languages"
+    );
+
+    // Try to find a non-existent language
+    let transcript = transcript_list.find_transcript(&["non-existent"]);
+    assert!(transcript.is_err(), "Found a non-existent transcript");
+}
+
+#[tokio::test]
+async fn test_fetch_transcript() {
+    setup();
+    let api = create_api();
+
+    // Test fetching an English transcript
+    let result = api
+        .fetch_transcript(MULTILANG_VIDEO_ID, &["en"], false)
+        .await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    assert!(result.is_ok(), "Failed to fetch English transcript");
+
+    let transcript = result.unwrap();
+    assert_eq!(transcript.video_id, MULTILANG_VIDEO_ID);
+    assert!(
+        !transcript.snippets.is_empty(),
+        "Transcript has no snippets"
+    );
+
+    // Each snippet should have text and timing information
+    for snippet in transcript.snippets {
+        assert!(!snippet.text.is_empty(), "Snippet has empty text");
+        assert!(snippet.start >= 0.0, "Snippet has negative start time");
+        assert!(
+            snippet.duration > 0.0,
+            "Snippet has zero or negative duration"
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_translate_transcript() {
+    setup();
+    let api = create_api();
+
+    // Get a transcript list
+    let transcript_list_result = api.list_transcripts(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &transcript_list_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    let transcript_list = match transcript_list_result {
+        Ok(list) => list,
+        Err(e) => panic!("Failed to get transcript list: {:?}", e),
+    };
+
+    // Find a transcript that supports translation
+    let mut found_translatable = false;
+    for transcript in &transcript_list {
+        if transcript.is_translatable() {
+            found_translatable = true;
+
+            // Try to translate to French
+            if transcript
+                .translation_languages
+                .iter()
+                .any(|lang| lang.language_code == "fr")
+            {
+                let translated = transcript.translate("fr").unwrap();
+                assert_eq!(translated.language_code, "fr");
+                break;
+            }
+        }
+    }
+
+    assert!(found_translatable, "No translatable transcripts found");
+}
+
+#[tokio::test]
+async fn test_fetch_non_existent_video() {
+    setup();
+    let api = create_api();
+
+    // Test fetching a non-existent video
+    let result = api.list_transcripts(NON_EXISTENT_VIDEO_ID).await;
+    assert!(result.is_err(), "Successfully fetched non-existent video");
+
+    // Check the error type
+    let error = result.unwrap_err();
+    match error.reason {
+        Some(CouldNotRetrieveTranscriptReason::VideoUnavailable)
+        | Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) => {
+            // These are acceptable errors
+        }
+        _ => panic!("Unexpected error type: {:?}", error),
+    }
+}
+
+#[tokio::test]
+async fn test_transcriptlist_formatter() {
+    setup();
+    let api = create_api();
+
+    // Get the list of transcripts
+    let transcript_list_result = api.list_transcripts(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &transcript_list_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            // Skip test
+            return;
+        }
+        panic!("Failed to get transcript list: {:?}", error);
+    }
+
+    let transcript_list = transcript_list_result.unwrap();
+
+    // Check that the string representation is not empty
+    let transcript_list_str = format!("{}", transcript_list);
+    assert!(!transcript_list_str.is_empty());
+    assert!(transcript_list_str.contains("Available transcripts"));
+}
+
+#[tokio::test]
+async fn test_transcript_formatter() {
+    setup();
+    let api = create_api();
+
+    // Get the list of transcripts
+    let transcript_list_result = api.list_transcripts(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &transcript_list_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            // Skip test
+            return;
+        }
+        panic!("Failed to get transcript list: {:?}", error);
+    }
+
+    let transcript_list = transcript_list_result.unwrap();
+
+    // Try to find a transcript
+    let transcript_result = transcript_list.find_transcript(&["en"]);
+
+    if let Err(_) = &transcript_result {
+        // This might happen if the transcript list doesn't have English
+        return;
+    }
+
+    let transcript = transcript_result.unwrap();
+
+    // Check that the string representation is not empty
+    let transcript_str = format!("{}", transcript);
+    assert!(!transcript_str.is_empty());
+    assert!(transcript_str.contains("en"));
+}
+
+#[tokio::test]
+async fn test_preserve_formatting() {
+    setup();
+    let api = create_api();
+
+    // Test fetching a transcript with formatting preserved
+    let with_formatting_result = api
+        .fetch_transcript(MULTILANG_VIDEO_ID, &["en"], true)
+        .await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &with_formatting_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    let with_formatting = match with_formatting_result {
+        Ok(transcript) => transcript,
+        Err(e) => panic!("Failed to fetch transcript with formatting: {:?}", e),
+    };
+
+    // Test fetching the same transcript without formatting
+    let without_formatting_result = api
+        .fetch_transcript(MULTILANG_VIDEO_ID, &["en"], false)
+        .await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &without_formatting_result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    let without_formatting = match without_formatting_result {
+        Ok(transcript) => transcript,
+        Err(e) => panic!("Failed to fetch transcript without formatting: {:?}", e),
+    };
+
+    // Compare if they are different in some way
+    // Note: This may not always be true if the transcript has no formatting
+    // So this is more of a smoke test
+    assert_eq!(with_formatting.video_id, without_formatting.video_id);
+    assert_eq!(with_formatting.language, without_formatting.language);
+    assert_eq!(
+        with_formatting.language_code,
+        without_formatting.language_code
+    );
+}
