@@ -39,6 +39,11 @@ html-escape = "0.2.13"
 # Testing dependencies
 mockito = "1.7.0"
 
+[features]
+default = []
+mock = []
+ci = ["mock"]
+
 # Documentation for optimized release build
 [profile.release]
 opt-level = 3

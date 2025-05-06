@@ -13,11 +13,20 @@ pub fn setup() {
 }
 
 /// Create a test instance of the YouTubeTranscriptApi
+/// 
+/// When in GitHub Actions or other CI environments, this will use mock data
+/// instead of making real API calls to YouTube
 pub fn create_api() -> YouTubeTranscriptApi {
-    let client = Client::builder()
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        .build()
-        .unwrap();
+    let client = if cfg!(feature = "ci") || std::env::var("CI").is_ok() {
+        // When running in CI, use the mock client
+        super::mocks::create_mock_client()
+    } else {
+        // For local development, use a real client
+        Client::builder()
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+            .build()
+            .unwrap()
+    };
 
     YouTubeTranscriptApi::new(None, None, Some(client)).unwrap()
 }

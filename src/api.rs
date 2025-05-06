@@ -52,6 +52,7 @@ use crate::{FetchedTranscript, TranscriptList};
 pub struct YouTubeTranscriptApi {
     /// The internal data fetcher used to retrieve information from YouTube
     fetcher: Arc<VideoDataFetcher>,
+
 }
 
 impl YouTubeTranscriptApi {

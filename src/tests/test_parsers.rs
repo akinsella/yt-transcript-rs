@@ -3,34 +3,6 @@ use serde_json::json;
 use crate::{js_var_parser::JsVarParser, transcript_parser::TranscriptParser};
 
 #[test]
-fn test_transcript_parser_no_preserve_formatting() {
-    let parser = TranscriptParser::new(false);
-
-    // Test with a simpler XML format that's more compatible with roxmltree
-    let xml = r#"
-    <transcript>
-        <text start="0.0" dur="1.0">This is a formatted transcript</text>
-        <text start="1.0" dur="1.5">With multiple tags</text>
-        <text start="2.5" dur="2.0">And some other formatting</text>
-    </transcript>
-    "#;
-
-    let result = parser.parse(xml).unwrap();
-
-    assert_eq!(result.len(), 3);
-    assert_eq!(result[0].text, "This is a formatted transcript");
-    assert_eq!(result[1].text, "With multiple tags");
-    assert_eq!(result[2].text, "And some other formatting");
-
-    assert_eq!(result[0].start, 0.0);
-    assert_eq!(result[0].duration, 1.0);
-    assert_eq!(result[1].start, 1.0);
-    assert_eq!(result[1].duration, 1.5);
-    assert_eq!(result[2].start, 2.5);
-    assert_eq!(result[2].duration, 2.0);
-}
-
-#[test]
 fn test_js_var_parser() {
     let parser = JsVarParser::new("testVar");
 

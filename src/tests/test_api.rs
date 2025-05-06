@@ -2,6 +2,7 @@ use super::test_utils::{MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID, create_api, s
 
 use crate::errors::CouldNotRetrieveTranscriptReason;
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_list_transcripts() {
     setup();
@@ -43,6 +44,7 @@ async fn test_list_transcripts() {
     }
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_find_transcript() {
     setup();
@@ -79,6 +81,7 @@ async fn test_find_transcript() {
     assert!(transcript.is_err(), "Found a non-existent transcript");
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_fetch_transcript() {
     setup();
@@ -116,6 +119,7 @@ async fn test_fetch_transcript() {
     }
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_translate_transcript() {
     setup();
@@ -158,6 +162,7 @@ async fn test_translate_transcript() {
     assert!(found_translatable, "No translatable transcripts found");
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_fetch_non_existent_video() {
     setup();
@@ -178,8 +183,9 @@ async fn test_fetch_non_existent_video() {
     }
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
-async fn test_transcriptlist_formatter() {
+async fn test_transcriptlist() {
     setup();
     let api = create_api();
 
@@ -203,6 +209,7 @@ async fn test_transcriptlist_formatter() {
     assert!(transcript_list_str.contains("Available transcripts"));
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_transcript_formatter() {
     setup();
@@ -238,6 +245,7 @@ async fn test_transcript_formatter() {
     assert!(transcript_str.contains("en"));
 }
 
+#[cfg(not(feature = "ci"))]
 #[tokio::test]
 async fn test_preserve_formatting() {
     setup();
