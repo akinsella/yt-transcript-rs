@@ -1,11 +1,11 @@
 [package]
-name = "yt_transcript_rs"
-version = "0.1.0"
+name = "yt-transcript-rs"
+version = "0.1.1"
 authors = ["Alexis Kinsella <alexis.kinsella@gmail.com>"]
 description = "A Rust library for fetching and working with YouTube video transcripts"
 license = "MIT"
 repository = "https://github.com/akinsella/yt-transcript-rs"
-documentation = "https://docs.rs/yt_transcript_rs"
+documentation = "https://docs.rs/yt-transcript-rs"
 readme = "README.md"
 keywords = ["youtube", "transcript", "subtitles", "captions", "video"]
 categories = ["api-bindings", "web-programming", "multimedia"]

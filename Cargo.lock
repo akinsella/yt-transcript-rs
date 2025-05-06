@@ -2000,8 +2000,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "yt_transcript_rs"
-version = "0.1.0"
+name = "yt-transcript-rs"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
