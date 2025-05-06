@@ -1,10 +1,12 @@
+#[cfg(feature = "ci")]
 mod mock_api;
+#[cfg(feature = "ci")]
 pub mod mocks;
 mod test_api;
 mod test_parsers;
 mod test_proxies;
 pub mod test_utils;
-// #[cfg(feature = "ci")]
+#[cfg(feature = "ci")]
 mod test_api_mocks;
 
 // Re-export the test modules
