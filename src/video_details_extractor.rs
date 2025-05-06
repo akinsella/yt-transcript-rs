@@ -122,10 +122,15 @@ impl VideoDetailsExtractor {
                 };
 
                 // Extract keywords
-                let keywords = details.get("keywords").and_then(|k| k.as_array()).map(|kw_array| kw_array
+                let keywords = details
+                    .get("keywords")
+                    .and_then(|k| k.as_array())
+                    .map(|kw_array| {
+                        kw_array
                             .iter()
                             .filter_map(|k| k.as_str().map(|s| s.to_string()))
-                            .collect());
+                            .collect()
+                    });
 
                 // Extract other fields with defaults for missing fields
                 Ok(VideoDetails {
