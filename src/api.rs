@@ -56,6 +56,7 @@ pub struct YouTubeTranscriptApi {
     /// The internal data fetcher used to retrieve information from YouTube
     #[cfg(not(feature = "ci"))]
     fetcher: Arc<VideoDataFetcher>,
+    #[cfg(feature = "ci")]
     client: Client,
 }
 
@@ -195,6 +196,7 @@ impl YouTubeTranscriptApi {
         Ok(Self {
             #[cfg(not(feature = "ci"))]
             fetcher,
+            #[cfg(feature = "ci")]
             client,
         })
     }
@@ -273,6 +275,7 @@ impl YouTubeTranscriptApi {
         &self,
         video_id: &str,
         languages: &[&str],
+        _preserve_formatting: bool,
     ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
         if video_id == crate::tests::test_utils::NON_EXISTENT_VIDEO_ID {
             return Err(CouldNotRetrieveTranscript {
