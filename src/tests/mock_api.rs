@@ -1,12 +1,12 @@
-use tokio::test;
 use crate::api::YouTubeTranscriptApi;
 use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
-use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
-use crate::transcript_list::TranscriptList;
 use crate::fetched_transcript::FetchedTranscript;
+use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
 use crate::transcript::Transcript;
-use std::collections::HashMap;
+use crate::transcript_list::TranscriptList;
 use reqwest::Client;
+use std::collections::HashMap;
+use tokio::test;
 
 // Create a simple mock client
 fn create_client() -> Client {
@@ -44,7 +44,7 @@ fn create_mock_transcript() -> FetchedTranscript {
 // Create mock transcript list
 fn create_mock_transcript_list() -> TranscriptList {
     let client = create_client();
-    
+
     let translation_languages = vec![
         TranslationLanguage {
             language: "English".to_string(),
@@ -55,7 +55,7 @@ fn create_mock_transcript_list() -> TranscriptList {
             language_code: "fr".to_string(),
         },
     ];
-    
+
     let mut manually_created_transcripts = HashMap::new();
     let english_transcript = Transcript::new(
         client.clone(),
@@ -67,7 +67,7 @@ fn create_mock_transcript_list() -> TranscriptList {
         translation_languages.clone(),
     );
     manually_created_transcripts.insert("en".to_string(), english_transcript);
-    
+
     TranscriptList::new(
         MOCK_VIDEO_ID.to_string(),
         manually_created_transcripts,
@@ -80,9 +80,9 @@ fn create_mock_transcript_list() -> TranscriptList {
 #[test]
 async fn test_list_transcripts() {
     let transcript_list = create_mock_transcript_list();
-    
+
     assert_eq!(transcript_list.video_id, MOCK_VIDEO_ID);
-    
+
     let mut found_transcripts = false;
     for transcript in &transcript_list {
         found_transcripts = true;
@@ -90,22 +90,25 @@ async fn test_list_transcripts() {
         assert!(!transcript.language_code.is_empty());
         assert!(!transcript.language.is_empty());
     }
-    
+
     assert!(found_transcripts, "No transcripts found in the list");
 }
 
 #[test]
 async fn test_find_transcript() {
     let transcript_list = create_mock_transcript_list();
-    
+
     // Try to find an English transcript
     let transcript = transcript_list.find_transcript(&["en"]);
     assert!(transcript.is_ok(), "Failed to find English transcript");
-    
+
     // Try to find with fallback languages
     let transcript = transcript_list.find_transcript(&["non-existent", "en"]);
-    assert!(transcript.is_ok(), "Failed to find transcript with fallback languages");
-    
+    assert!(
+        transcript.is_ok(),
+        "Failed to find transcript with fallback languages"
+    );
+
     // Try to find a non-existent language
     let transcript = transcript_list.find_transcript(&["non-existent"]);
     assert!(transcript.is_err(), "Found a non-existent transcript");
@@ -114,15 +117,21 @@ async fn test_find_transcript() {
 #[test]
 async fn test_fetch_transcript() {
     let transcript = create_mock_transcript();
-    
+
     assert_eq!(transcript.video_id, MOCK_VIDEO_ID);
-    assert!(!transcript.snippets.is_empty(), "Transcript has no snippets");
-    
+    assert!(
+        !transcript.snippets.is_empty(),
+        "Transcript has no snippets"
+    );
+
     // Each snippet should have text and timing information
     for snippet in &transcript.snippets {
         assert!(!snippet.text.is_empty(), "Snippet has empty text");
         assert!(snippet.start >= 0.0, "Snippet has negative start time");
-        assert!(snippet.duration > 0.0, "Snippet has zero or negative duration");
+        assert!(
+            snippet.duration > 0.0,
+            "Snippet has zero or negative duration"
+        );
     }
 }
 
@@ -130,13 +139,13 @@ async fn test_fetch_transcript() {
 async fn test_translate_transcript() {
     // Since this is a mock, we'll just verify that we can create a transcript list
     let transcript_list = create_mock_transcript_list();
-    
+
     // Let's just check that we have at least one translatable transcript
     let found_translatable = transcript_list
         .manually_created_transcripts
         .values()
         .any(|t| !t.translation_languages.is_empty());
-        
+
     assert!(found_translatable, "No translatable transcripts found");
 }
 
@@ -145,23 +154,29 @@ async fn test_preserve_formatting() {
     // Create two identical transcripts to compare
     let with_formatting = create_mock_transcript();
     let without_formatting = create_mock_transcript();
-    
+
     // In mock testing, we just verify basic properties
     assert_eq!(with_formatting.video_id, without_formatting.video_id);
     assert_eq!(with_formatting.language, without_formatting.language);
-    assert_eq!(with_formatting.language_code, without_formatting.language_code);
+    assert_eq!(
+        with_formatting.language_code,
+        without_formatting.language_code
+    );
 }
 
 #[test]
 async fn test_transcript_formatter() {
     let transcript_list = create_mock_transcript_list();
-    
+
     // Check that we can get a transcript
     let transcript_result = transcript_list.find_transcript(&["en"]);
-    assert!(transcript_result.is_ok(), "Failed to find English transcript");
-    
+    assert!(
+        transcript_result.is_ok(),
+        "Failed to find English transcript"
+    );
+
     let transcript = transcript_result.unwrap();
-    
+
     // Check that the string representation is not empty
     let transcript_str = format!("{}", transcript);
     assert!(!transcript_str.is_empty());
@@ -171,7 +186,7 @@ async fn test_transcript_formatter() {
 #[test]
 async fn test_transcriptlist_formatter() {
     let transcript_list = create_mock_transcript_list();
-    
+
     // Check that the string representation is not empty
     let transcript_list_str = format!("{}", transcript_list);
     assert!(!transcript_list_str.is_empty());

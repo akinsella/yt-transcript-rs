@@ -13,7 +13,7 @@ pub fn setup() {
 }
 
 /// Create a test instance of the YouTubeTranscriptApi
-/// 
+///
 /// When in GitHub Actions or other CI environments, this will use mock data
 /// instead of making real API calls to YouTube
 pub fn create_api() -> YouTubeTranscriptApi {

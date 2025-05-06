@@ -1,5 +1,5 @@
-pub mod mocks;
 mod mock_api;
+pub mod mocks;
 mod test_api;
 mod test_parsers;
 mod test_proxies;

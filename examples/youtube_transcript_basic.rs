@@ -25,7 +25,10 @@ async fn main() -> Result<()> {
     // Fetch the transcript
     println!("Fetching transcript for video ID: {}", video_id);
 
-    match api.fetch_transcript(video_id, languages, preserve_formatting).await {
+    match api
+        .fetch_transcript(video_id, languages, preserve_formatting)
+        .await
+    {
         Ok(transcript) => {
             println!("Successfully fetched transcript!");
             println!("Video ID: {}", transcript.video_id);

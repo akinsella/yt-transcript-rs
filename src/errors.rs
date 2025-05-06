@@ -1,6 +1,6 @@
-use thiserror::Error;
 use crate::TranscriptList;
-use crate::proxies::{ProxyConfig, GenericProxyConfig, WebshareProxyConfig};
+use crate::proxies::{GenericProxyConfig, ProxyConfig, WebshareProxyConfig};
+use thiserror::Error;
 
 /// # YouTubeTranscriptApiError
 ///
@@ -24,11 +24,11 @@ pub enum YouTubeTranscriptApiError {
 pub enum CookieError {
     #[error("Cookie error")]
     Generic,
-    
+
     /// Error when the specified cookie file path is invalid or inaccessible
     #[error("Can't load the provided cookie file: {0}")]
     PathInvalid(String),
-    
+
     /// Error when the cookies are invalid (possibly expired or malformed)
     #[error("The cookies provided are not valid (may have expired): {0}")]
     Invalid(String),
@@ -78,7 +78,7 @@ pub type CookieInvalid = CookieError;
 pub struct CouldNotRetrieveTranscript {
     /// The YouTube video ID that was being accessed
     pub video_id: String,
-    
+
     /// The specific reason why the transcript couldn't be retrieved
     pub reason: Option<CouldNotRetrieveTranscriptReason>,
 }
@@ -93,52 +93,52 @@ pub struct CouldNotRetrieveTranscript {
 pub enum CouldNotRetrieveTranscriptReason {
     /// Subtitles/transcripts are disabled for this video
     TranscriptsDisabled,
-    
+
     /// No transcript was found in any of the requested languages
     NoTranscriptFound {
         /// The language codes that were requested but not found
         requested_language_codes: Vec<String>,
-        
+
         /// Information about available transcripts that could be used instead
         transcript_data: TranscriptList,
     },
-    
+
     /// The video is no longer available (removed, private, etc.)
     VideoUnavailable,
-    
+
     /// The video cannot be played for some reason
     VideoUnplayable {
         /// The main reason why the video is unplayable
         reason: Option<String>,
-        
+
         /// Additional details about why the video is unplayable
         sub_reasons: Vec<String>,
     },
-    
+
     /// YouTube is blocking requests from your IP address
     IpBlocked(Option<Box<dyn ProxyConfig>>),
-    
+
     /// YouTube is blocking your request (rate limiting, etc.)
     RequestBlocked(Option<Box<dyn ProxyConfig>>),
-    
+
     /// The requested transcript cannot be translated
     NotTranslatable,
-    
+
     /// The requested translation language is not available
     TranslationLanguageNotAvailable,
-    
+
     /// Failed to create a consent cookie required by YouTube
     FailedToCreateConsentCookie,
-    
+
     /// The request to YouTube failed with a specific error
     YouTubeRequestFailed(String),
-    
+
     /// The provided video ID is invalid
     InvalidVideoId,
-    
+
     /// The video is age-restricted and requires authentication
     AgeRestricted,
-    
+
     /// The YouTube data structure couldn't be parsed
     YouTubeDataUnparsable,
 }
@@ -146,9 +146,11 @@ pub enum CouldNotRetrieveTranscriptReason {
 impl CouldNotRetrieveTranscript {
     /// Builds a detailed error message based on the error reason
     fn build_error_message(&self) -> String {
-        let base_error = format!("Could not retrieve a transcript for the video {}!", 
-            self.video_id.replace("{video_id}", &self.video_id));
-            
+        let base_error = format!(
+            "Could not retrieve a transcript for the video {}!",
+            self.video_id.replace("{video_id}", &self.video_id)
+        );
+
         match &self.reason {
             Some(reason) => {
                 let cause = match reason {
@@ -165,21 +167,18 @@ impl CouldNotRetrieveTranscript {
                     CouldNotRetrieveTranscriptReason::VideoUnplayable { reason, sub_reasons } => {
                         let reason_str = reason.clone().unwrap_or_else(|| "No reason specified!".to_string());
                         let mut message = format!("The video is unplayable for the following reason: {}", reason_str);
-                        
                         if !sub_reasons.is_empty() {
                             message.push_str("\n\nAdditional Details:\n");
                             for sub_reason in sub_reasons {
                                 message.push_str(&format!(" - {}\n", sub_reason));
                             }
                         }
-                        
                         message
                     },
                     CouldNotRetrieveTranscriptReason::IpBlocked(proxy_config) => {
                         let base_cause = "YouTube is blocking requests from your IP. This usually is due to one of the following reasons:
 - You have done too many requests and your IP has been blocked by YouTube
 - You are doing requests from an IP belonging to a cloud provider (like AWS, Google Cloud Platform, Azure, etc.). Unfortunately, most IPs from cloud providers are blocked by YouTube.";
-                        
                         match proxy_config {
                             Some(config) if config.as_any().is::<WebshareProxyConfig>() => {
                                 format!("{}\n\nYouTube is blocking your requests, despite you using Webshare proxies. Please make sure that you have purchased \"Residential\" proxies and NOT \"Proxy Server\" or \"Static Residential\", as those won't work as reliably! The free tier also uses \"Proxy Server\" and will NOT work!\n\nThe only reliable option is using \"Residential\" proxies (not \"Static Residential\"), as this allows you to rotate through a pool of over 30M IPs, which means you will always find an IP that hasn't been blocked by YouTube yet!", base_cause)
@@ -196,7 +195,6 @@ impl CouldNotRetrieveTranscript {
                         let base_cause = "YouTube is blocking requests from your IP. This usually is due to one of the following reasons:
 - You have done too many requests and your IP has been blocked by YouTube
 - You are doing requests from an IP belonging to a cloud provider (like AWS, Google Cloud Platform, Azure, etc.). Unfortunately, most IPs from cloud providers are blocked by YouTube.";
-                        
                         match proxy_config {
                             Some(config) if config.as_any().is::<WebshareProxyConfig>() => {
                                 format!("{}\n\nYouTube is blocking your requests, despite you using Webshare proxies. Please make sure that you have purchased \"Residential\" proxies and NOT \"Proxy Server\" or \"Static Residential\", as those won't work as reliably! The free tier also uses \"Proxy Server\" and will NOT work!\n\nThe only reliable option is using \"Residential\" proxies (not \"Static Residential\"), as this allows you to rotate through a pool of over 30M IPs, which means you will always find an IP that hasn't been blocked by YouTube yet!", base_cause)
@@ -231,9 +229,9 @@ impl CouldNotRetrieveTranscript {
                         "The data required to fetch the transcript is not parsable. This should not happen, please open an issue (make sure to include the video ID)!".to_string()
                     }
                 };
-                
+
                 format!("{} This is most likely caused by:\n\n{}", base_error, cause)
-            },
+            }
             None => base_error,
         }
     }
@@ -276,4 +274,4 @@ pub type InvalidVideoId = CouldNotRetrieveTranscript;
 pub type AgeRestricted = CouldNotRetrieveTranscript;
 
 /// Type alias for when YouTube data cannot be parsed
-pub type YouTubeDataUnparsable = CouldNotRetrieveTranscript; 
+pub type YouTubeDataUnparsable = CouldNotRetrieveTranscript;

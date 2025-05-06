@@ -1,7 +1,7 @@
 use anyhow::Result;
-use yt_transcript_rs::api::YouTubeTranscriptApi;
 use std::env;
 use std::path::Path;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
 
 /// This example demonstrates how to use cookie authentication with the YouTube Transcript API.
 ///
@@ -65,7 +65,10 @@ async fn main() -> Result<()> {
     println!("Fetching transcript for video ID: {}", video_id);
     println!("(The API will handle cookie consent if needed)");
 
-    match api.fetch_transcript(video_id, languages, preserve_formatting).await {
+    match api
+        .fetch_transcript(video_id, languages, preserve_formatting)
+        .await
+    {
         Ok(transcript) => {
             println!("\nSuccessfully fetched transcript!");
             println!("Video ID: {}", transcript.video_id);
@@ -94,13 +97,19 @@ async fn main() -> Result<()> {
             if format!("{:?}", e).contains("AgeRestricted") {
                 println!("\nThis video is age-restricted. To access it, you need to:");
                 println!("1. Export cookies from a browser where you're logged into YouTube");
-                println!("2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file");
+                println!(
+                    "2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file"
+                );
                 println!("3. Run this example again");
             } else if format!("{:?}", e).contains("FailedToCreateConsentCookie") {
                 println!("\nCouldn't create a consent cookie automatically.");
                 println!("To resolve this:");
-                println!("1. Export cookies from a browser where you've already accepted YouTube's consent");
-                println!("2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file");
+                println!(
+                    "1. Export cookies from a browser where you've already accepted YouTube's consent"
+                );
+                println!(
+                    "2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file"
+                );
             }
         }
     }

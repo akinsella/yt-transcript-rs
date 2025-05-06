@@ -1,10 +1,8 @@
 use anyhow::Result;
-use yt_transcript_rs::api::YouTubeTranscriptApi;
-use yt_transcript_rs::proxies::{
-    GenericProxyConfig, ProxyConfig,
-};
 use std::env;
 use std::path::Path;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+use yt_transcript_rs::proxies::{GenericProxyConfig, ProxyConfig};
 
 /// This advanced example demonstrates combining multiple features of the YouTube Transcript API:
 ///
@@ -128,19 +126,27 @@ async fn main() -> Result<()> {
             if error_str.contains("AgeRestricted") {
                 println!("\nThis video is age-restricted. To access it, you need to:");
                 println!("1. Export cookies from a browser where you're logged into YouTube");
-                println!("2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file");
+                println!(
+                    "2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file"
+                );
                 println!("3. Run this example again");
             } else if error_str.contains("IpBlocked") || error_str.contains("RequestBlocked") {
                 println!("\nYouTube is blocking requests from your IP address.");
                 println!("To bypass this restriction, you can:");
-                println!("1. Set up an HTTP proxy by setting the HTTP_PROXY and HTTPS_PROXY environment variables");
+                println!(
+                    "1. Set up an HTTP proxy by setting the HTTP_PROXY and HTTPS_PROXY environment variables"
+                );
                 println!("2. Wait a while before trying again from your current IP");
                 println!("3. Try using a VPN service");
             } else if error_str.contains("FailedToCreateConsentCookie") {
                 println!("\nCouldn't automatically handle YouTube's cookie consent requirements.");
                 println!("To resolve this:");
-                println!("1. Export cookies from a browser where you've already accepted YouTube's consent");
-                println!("2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file");
+                println!(
+                    "1. Export cookies from a browser where you've already accepted YouTube's consent"
+                );
+                println!(
+                    "2. Set the YOUTUBE_COOKIE_FILE environment variable to point to your cookie file"
+                );
             } else if error_str.contains("NoTranscriptFound") {
                 println!("\nNo transcript was found for this video in the requested languages.");
                 println!("You can:");
