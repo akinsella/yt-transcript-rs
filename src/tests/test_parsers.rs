@@ -1,5 +1,7 @@
+#[allow(unused_imports)]
 use serde_json::json;
 
+#[allow(unused_imports)]
 use crate::{js_var_parser::JsVarParser, transcript_parser::TranscriptParser};
 
 #[test]

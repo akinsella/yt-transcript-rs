@@ -1,4 +1,4 @@
-use reqwest::{Client, Response, ResponseBuilderExt};
+use reqwest::Client;
 use std::collections::HashMap;
 
 use serde_json::json;

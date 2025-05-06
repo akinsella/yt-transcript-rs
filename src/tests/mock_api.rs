@@ -1,5 +1,3 @@
-use crate::api::YouTubeTranscriptApi;
-use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::fetched_transcript::FetchedTranscript;
 use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
 use crate::transcript::Transcript;

@@ -1,5 +1,7 @@
+#[allow(unused_imports)]
 use super::test_utils::{MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID, create_api, setup};
 
+#[allow(unused_imports)]
 use crate::errors::CouldNotRetrieveTranscriptReason;
 
 #[cfg(not(feature = "ci"))]

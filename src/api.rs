@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::cookie_jar_loader::CookieJarLoader;
-use crate::errors::{CookieError, CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
+use crate::errors::{CookieError, CouldNotRetrieveTranscript};
 use crate::models::VideoDetails;
 use crate::proxies::ProxyConfig;
 use crate::video_data_fetcher::VideoDataFetcher;
@@ -52,7 +52,7 @@ use crate::{FetchedTranscript, TranscriptList};
 pub struct YouTubeTranscriptApi {
     /// The internal data fetcher used to retrieve information from YouTube
     fetcher: Arc<VideoDataFetcher>,
-    client: Client,
+    _client: Client,
 }
 
 impl YouTubeTranscriptApi {
@@ -187,7 +187,7 @@ impl YouTubeTranscriptApi {
 
         let fetcher = Arc::new(VideoDataFetcher::new(client.clone(), proxy_config));
 
-        Ok(Self { fetcher, client })
+        Ok(Self { fetcher, _client: client })
     }
 
     /// Fetches a transcript for a YouTube video in the specified languages.
