@@ -138,7 +138,7 @@ impl VideoDataFetcher {
     /// # Returns
     ///
     /// * `Result<serde_json::Value, CouldNotRetrieveTranscript>` - The captions JSON data or an error
-    async fn fetch_video_captions(
+    pub async fn fetch_video_captions(
         &self,
         video_id: &str,
     ) -> Result<serde_json::Value, CouldNotRetrieveTranscript> {

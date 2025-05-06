@@ -9,7 +9,7 @@ use std::sync::Arc;
 use crate::api::YouTubeTranscriptApi;
 use crate::video_data_fetcher::VideoDataFetcher;
 
-#[cfg(feature = "ci")]
+// #[cfg(feature = "ci")]
 #[tokio::test]
 async fn test_list_transcripts() {
     setup();

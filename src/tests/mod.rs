@@ -1,9 +1,9 @@
-mod mocks;
+pub mod mocks;
 mod mock_api;
 mod test_api;
 mod test_parsers;
 mod test_proxies;
-mod test_utils;
+pub mod test_utils;
 // #[cfg(feature = "ci")]
 mod test_api_mocks;
 

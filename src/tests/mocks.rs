@@ -1,12 +1,13 @@
-use std::collections::HashMap;
 use reqwest::{Client, Response, ResponseBuilderExt};
+use std::collections::HashMap;
 
 use serde_json::json;
 
+use crate::VideoDetails;
+use crate::fetched_transcript::FetchedTranscript;
 use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
 use crate::transcript::Transcript;
 use crate::transcript_list::TranscriptList;
-use crate::fetched_transcript::FetchedTranscript;
 
 // Mock video IDs that match the ones used in tests
 pub const MOCK_MULTILANG_VIDEO_ID: &str = "arj7oStGLkU";
@@ -15,7 +16,7 @@ pub const MOCK_NON_EXISTENT_VIDEO_ID: &str = "xxxxxxxxxxx";
 // Create mock transcript data
 pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
     let video_id = MOCK_MULTILANG_VIDEO_ID.to_string();
-    
+
     // Create translation languages
     let translation_languages = vec![
         TranslationLanguage {
@@ -31,7 +32,7 @@ pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
             language_code: "es".to_string(),
         },
     ];
-    
+
     // Create manually created transcripts
     let mut manually_created_transcripts = HashMap::new();
     let english_transcript = Transcript::new(
@@ -44,7 +45,7 @@ pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
         translation_languages.clone(),
     );
     manually_created_transcripts.insert("en".to_string(), english_transcript);
-    
+
     // Create generated transcripts
     let mut generated_transcripts = HashMap::new();
     let spanish_transcript = Transcript::new(
@@ -57,7 +58,7 @@ pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
         vec![],
     );
     generated_transcripts.insert("es".to_string(), spanish_transcript);
-    
+
     TranscriptList::new(
         video_id,
         manually_created_transcripts,
@@ -85,14 +86,14 @@ pub fn create_mock_fetched_transcript(video_id: &str, language_code: &str) -> Fe
             duration: 4.0,
         },
     ];
-    
+
     let language = match language_code {
         "en" => "English",
         "fr" => "French",
         "es" => "Spanish",
         _ => "Unknown",
     };
-    
+
     FetchedTranscript {
         snippets,
         video_id: video_id.to_string(),
@@ -166,12 +167,25 @@ pub fn mock_transcript_data() -> serde_json::Value {
     ])
 }
 
+// Create a mock video details
+pub fn create_mock_video_details() -> VideoDetails {
+    VideoDetails {
+        video_id: MOCK_MULTILANG_VIDEO_ID.to_string(),
+        title: "Test Video".to_string(),
+        author: "Test Author".to_string(),
+        length_seconds: 100,
+        keywords: Some(vec!["test".to_string(), "mock".to_string()]),
+        channel_id: "test-channel".to_string(),
+        short_description: "Test description".to_string(),
+        view_count: "100".to_string(),
+        thumbnails: vec![],
+        is_live_content: false,
+    }
+}
+
 // Create a mock HTTP client for tests
 pub fn create_mock_client() -> Client {
     // In real implementation, we'd use a more sophisticated HTTP mocking library
     // For this example, we're keeping it simple
-    Client::builder()
-        .user_agent("Mock Client")
-        .build()
-        .unwrap()
+    Client::builder().user_agent("Mock Client").build().unwrap()
 }
