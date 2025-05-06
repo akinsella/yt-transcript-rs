@@ -16,9 +16,11 @@ fn create_client() -> Client {
 }
 
 // Mock video ID - matches the one used in tests
+#[allow(dead_code)]
 const MOCK_VIDEO_ID: &str = "arj7oStGLkU";
 
 // Create mock fetched transcript
+#[allow(dead_code)]
 fn create_mock_transcript() -> FetchedTranscript {
     FetchedTranscript {
         snippets: vec![
@@ -41,6 +43,7 @@ fn create_mock_transcript() -> FetchedTranscript {
 }
 
 // Create mock transcript list
+#[allow(dead_code)]
 fn create_mock_transcript_list() -> TranscriptList {
     let client = create_client();
 
