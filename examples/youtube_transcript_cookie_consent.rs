@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
             println!("Number of snippets: {}", transcript.snippets.len());
             println!("\nTranscript content (first 5 snippets):");
 
-            for (_i, snippet) in transcript.snippets.iter().take(5).enumerate() {
+            for snippet in transcript.snippets.iter().take(5) {
                 println!(
                     "[{:.1}-{:.1}s] {}",
                     snippet.start,

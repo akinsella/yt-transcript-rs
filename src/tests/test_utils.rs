@@ -1,3 +1,4 @@
+#[cfg(not(feature = "ci"))]
 use reqwest::Client;
 use std::sync::Once;
 
@@ -18,15 +19,14 @@ pub fn setup() {
 /// instead of making real API calls to YouTube
 #[cfg(feature = "ci")]
 pub fn create_api() -> YouTubeTranscriptApi {
-        // When running in CI, use the mock client
-    super::mocks::create_mock_client();
+    // When running in CI, use the mock client
+    let client = super::mocks::create_mock_client();
 
     YouTubeTranscriptApi::new(None, None, Some(client)).unwrap()
 }
 
 #[cfg(not(feature = "ci"))]
 pub fn create_api() -> YouTubeTranscriptApi {
-
     // For local development, use a real client
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")

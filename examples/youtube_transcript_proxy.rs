@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
                         println!("Number of snippets: {}", transcript.snippets.len());
 
                         // Display the first few snippets
-                        for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                        for snippet in transcript.snippets.iter().take(3) {
                             println!(
                                 "[{:.1}-{:.1}s] {}",
                                 snippet.start,
@@ -102,7 +102,7 @@ async fn main() -> Result<()> {
                 println!("Number of snippets: {}", transcript.snippets.len());
 
                 // Display the first few snippets
-                for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                for snippet in transcript.snippets.iter().take(3) {
                     println!(
                         "[{:.1}-{:.1}s] {}",
                         snippet.start,
@@ -133,7 +133,7 @@ async fn main() -> Result<()> {
                 println!("Number of snippets: {}", transcript.snippets.len());
 
                 // Display the first few snippets
-                for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                for snippet in transcript.snippets.iter().take(3) {
                     println!(
                         "[{:.1}-{:.1}s] {}",
                         snippet.start,

@@ -441,7 +441,7 @@ impl<'a> IntoIterator for &'a TranscriptList {
     >;
 
     fn into_iter(self) -> Self::IntoIter {
-        fn id<'a>(t: &'a Transcript) -> &'a Transcript {
+        fn id(t: &Transcript) -> &Transcript {
             t
         }
         self.manually_created_transcripts

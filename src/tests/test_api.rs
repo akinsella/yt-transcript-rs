@@ -234,7 +234,7 @@ async fn test_transcript_formatter() {
     // Try to find a transcript
     let transcript_result = transcript_list.find_transcript(&["en"]);
 
-    if let Err(_) = &transcript_result {
+    if transcript_result.is_err() {
         // This might happen if the transcript list doesn't have English
         return;
     }

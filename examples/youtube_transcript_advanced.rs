@@ -75,7 +75,7 @@ async fn main() -> Result<()> {
     };
 
     // Set up cookie path if available
-    let cookie_path = cookie_file.as_ref().map(|path| Path::new(path));
+    let cookie_path = cookie_file.as_ref().map(Path::new);
 
     // Initialize the API
     let api = YouTubeTranscriptApi::new(cookie_path, proxy_config, None)?;

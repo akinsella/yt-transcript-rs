@@ -3,9 +3,12 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::cookie_jar_loader::CookieJarLoader;
+#[cfg(feature = "ci")]
+use crate::errors::CouldNotRetrieveTranscriptReason;
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
 use crate::models::VideoDetails;
 use crate::proxies::ProxyConfig;
+#[cfg(not(feature = "ci"))]
 use crate::video_data_fetcher::VideoDataFetcher;
 use crate::{FetchedTranscript, TranscriptList};
 
@@ -51,8 +54,9 @@ use crate::{FetchedTranscript, TranscriptList};
 #[derive(Clone)]
 pub struct YouTubeTranscriptApi {
     /// The internal data fetcher used to retrieve information from YouTube
+    #[cfg(not(feature = "ci"))]
     fetcher: Arc<VideoDataFetcher>,
-    _client: Client,
+    client: Client,
 }
 
 impl YouTubeTranscriptApi {
@@ -185,9 +189,14 @@ impl YouTubeTranscriptApi {
             }
         };
 
+        #[cfg(not(feature = "ci"))]
         let fetcher = Arc::new(VideoDataFetcher::new(client.clone(), proxy_config));
 
-        Ok(Self { fetcher, _client: client })
+        Ok(Self {
+            #[cfg(not(feature = "ci"))]
+            fetcher,
+            client,
+        })
     }
 
     /// Fetches a transcript for a YouTube video in the specified languages.
@@ -264,7 +273,6 @@ impl YouTubeTranscriptApi {
         &self,
         video_id: &str,
         languages: &[&str],
-        preserve_formatting: bool,
     ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
         if video_id == crate::tests::test_utils::NON_EXISTENT_VIDEO_ID {
             return Err(CouldNotRetrieveTranscript {
