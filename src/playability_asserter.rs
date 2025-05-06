@@ -163,7 +163,8 @@ impl PlayabilityAsserter {
                     })
                 }
             }
-            "ERROR" | _ => {
+            // "ERROR" | _ => {
+            _ => {
                 let reason = player_data
                     .get("playabilityStatus")
                     .and_then(|s| s.get("reason"))

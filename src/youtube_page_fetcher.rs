@@ -167,22 +167,19 @@ impl YoutubePageFetcher {
                     )),
                 };
 
-                if let Some(status) = e.status() {
-                    match status {
-                        StatusCode::FORBIDDEN | StatusCode::TOO_MANY_REQUESTS => {
-                            // Create either RequestBlocked or IpBlocked error
-                            // We can't clone the proxy_config directly, so we'll just check if it exists
-                            error = CouldNotRetrieveTranscript {
-                                video_id: video_id.to_string(),
-                                reason: if self.proxy_config.is_some() {
-                                    Some(CouldNotRetrieveTranscriptReason::RequestBlocked(None))
-                                } else {
-                                    Some(CouldNotRetrieveTranscriptReason::IpBlocked(None))
-                                },
-                            };
-                        }
-                        _ => {}
-                    }
+                if let Some(_status @ (StatusCode::FORBIDDEN | StatusCode::TOO_MANY_REQUESTS)) =
+                    e.status()
+                {
+                    // Create either RequestBlocked or IpBlocked error
+                    // We can't clone the proxy_config directly, so we'll just check if it exists
+                    error = CouldNotRetrieveTranscript {
+                        video_id: video_id.to_string(),
+                        reason: if self.proxy_config.is_some() {
+                            Some(CouldNotRetrieveTranscriptReason::RequestBlocked(None))
+                        } else {
+                            Some(CouldNotRetrieveTranscriptReason::IpBlocked(None))
+                        },
+                    };
                 }
 
                 error
