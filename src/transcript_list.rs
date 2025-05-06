@@ -2,22 +2,75 @@ use reqwest::Client;
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::errors::{
-    CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason,
-};
+use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::models::TranslationLanguage;
 use crate::transcript::Transcript;
 
-/// A collection of available transcripts for a video
+/// # TranscriptList
+///
+/// A collection of available transcripts for a YouTube video.
+///
+/// This struct provides access to all transcripts available for a video, including:
+/// - Manually created transcripts (by the video owner or contributors)
+/// - Automatically generated transcripts (created by YouTube's speech recognition)
+/// - Available translation languages for translatable transcripts
+///
+/// The `TranscriptList` differentiates between manually created and automatically generated
+/// transcripts, as the manually created ones tend to be more accurate. This allows you
+/// to prioritize manually created transcripts over automatically generated ones.
+///
+/// ## Usage Example
+///
+/// ```rust,no_run
+/// # use yt_transcript_rs::YouTubeTranscriptApi;
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let api = YouTubeTranscriptApi::new(None, None, None)?;
+///
+/// // Get a list of all available transcripts for a video
+/// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+///
+/// // Print all available transcripts
+/// println!("Available transcripts: {}", transcript_list);
+///
+/// // Find a transcript in a specific language (prioritizing English)
+/// let transcript = transcript_list.find_transcript(&["en", "en-US"])?;
+///
+/// // Or specifically find a manually created transcript
+/// let manual_transcript = transcript_list.find_manually_created_transcript(&["en"])?;
+///
+/// // Or retrieve an automatically generated transcript
+/// let auto_transcript = transcript_list.find_generated_transcript(&["en"])?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct TranscriptList {
+    /// The YouTube video ID this transcript list belongs to
     pub video_id: String,
+
+    /// Map of language codes to manually created transcripts
     pub manually_created_transcripts: HashMap<String, Transcript>,
+
+    /// Map of language codes to automatically generated transcripts
     pub generated_transcripts: HashMap<String, Transcript>,
+
+    /// List of languages available for translation
     pub translation_languages: Vec<TranslationLanguage>,
 }
 
 impl TranscriptList {
+    /// Creates a new TranscriptList with the provided components.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID this transcript list belongs to
+    /// * `manually_created_transcripts` - Map of language codes to manually created transcripts
+    /// * `generated_transcripts` - Map of language codes to automatically generated transcripts
+    /// * `translation_languages` - List of languages available for translation
+    ///
+    /// # Returns
+    ///
+    /// A new `TranscriptList` instance
     pub fn new(
         video_id: String,
         manually_created_transcripts: HashMap<String, Transcript>,
@@ -32,7 +85,26 @@ impl TranscriptList {
         }
     }
 
-    /// Create a TranscriptList from YouTube caption data
+    /// Creates a TranscriptList from YouTube's caption JSON data.
+    ///
+    /// This method parses YouTube's internal caption data structure to extract:
+    /// - Available transcripts (both manual and automatic)
+    /// - Their respective language codes and names
+    /// - Information about available translation languages
+    ///
+    /// # Parameters
+    ///
+    /// * `client` - HTTP client for making requests
+    /// * `video_id` - The YouTube video ID
+    /// * `video_page_html` - JSON data extracted from YouTube's page containing caption information
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, CouldNotRetrieveTranscript>` - A transcript list or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the caption data cannot be properly parsed.
     pub fn build(
         client: Client,
         video_id: String,
@@ -129,7 +201,37 @@ impl TranscriptList {
         ))
     }
 
-    /// Find a transcript by language code
+    /// Finds a transcript matching one of the specified language codes.
+    ///
+    /// This method searches for transcripts in the order of priority:
+    /// 1. Manually created transcripts with the specified language codes (in order)
+    /// 2. Automatically generated transcripts with the specified language codes (in order)
+    ///
+    /// # Parameters
+    ///
+    /// * `language_codes` - Array of language codes to search for, in order of preference
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Transcript, CouldNotRetrieveTranscript>` - Matching transcript or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no transcript is found for any of the specified language codes.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    ///
+    /// // Try to find English, fall back to Spanish, then auto-generated English
+    /// let transcript = transcript_list.find_transcript(&["en", "es", "en-US"])?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn find_transcript(
         &self,
         language_codes: &[&str],
@@ -143,7 +245,46 @@ impl TranscriptList {
         )
     }
 
-    /// Find a manually created transcript
+    /// Finds a manually created transcript matching one of the specified language codes.
+    ///
+    /// This method only searches the manually created transcripts, skipping any
+    /// automatically generated ones. This is useful when you want to ensure you're
+    /// getting a human-created transcript for better accuracy.
+    ///
+    /// # Parameters
+    ///
+    /// * `language_codes` - Array of language codes to search for, in order of preference
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Transcript, CouldNotRetrieveTranscript>` - Matching transcript or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no manually created transcript is found for any of the
+    /// specified language codes.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    ///
+    /// // Only look for manually created transcripts
+    /// match transcript_list.find_manually_created_transcript(&["en"]) {
+    ///     Ok(transcript) => {
+    ///         println!("Found manual transcript!");
+    ///     },
+    ///     Err(_) => {
+    ///         println!("No manual transcript available, falling back to auto-generated");
+    ///         let auto_transcript = transcript_list.find_generated_transcript(&["en"])?;
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn find_manually_created_transcript(
         &self,
         language_codes: &[&str],
@@ -151,7 +292,24 @@ impl TranscriptList {
         self.find_transcript_in_maps(language_codes, &[&self.manually_created_transcripts])
     }
 
-    /// Find an automatically generated transcript
+    /// Finds an automatically generated transcript matching one of the specified language codes.
+    ///
+    /// This method only searches the automatically generated transcripts, skipping any
+    /// manually created ones. This might be useful in rare cases where you specifically
+    /// want the auto-generated version.
+    ///
+    /// # Parameters
+    ///
+    /// * `language_codes` - Array of language codes to search for, in order of preference
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Transcript, CouldNotRetrieveTranscript>` - Matching transcript or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no automatically generated transcript is found for any of the
+    /// specified language codes.
     pub fn find_generated_transcript(
         &self,
         language_codes: &[&str],
@@ -159,7 +317,25 @@ impl TranscriptList {
         self.find_transcript_in_maps(language_codes, &[&self.generated_transcripts])
     }
 
-    /// Helper to find a transcript in multiple maps
+    /// Helper method to find a transcript in multiple transcript maps.
+    ///
+    /// This internal method is used by the public transcript finding methods to search
+    /// through the provided maps of transcripts for the first match with the specified
+    /// language codes.
+    ///
+    /// # Parameters
+    ///
+    /// * `language_codes` - Array of language codes to search for, in order of preference
+    /// * `transcript_maps` - Array of transcript maps to search through, in order of priority
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Transcript, CouldNotRetrieveTranscript>` - Matching transcript or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no transcript is found for any of the specified language codes
+    /// in any of the provided transcript maps.
     fn find_transcript_in_maps(
         &self,
         language_codes: &[&str],
@@ -180,6 +356,37 @@ impl TranscriptList {
                 transcript_data: self.clone(),
             }),
         })
+    }
+
+    /// Returns a reference to all available transcripts.
+    ///
+    /// This method provides access to both manually created and automatically generated
+    /// transcripts as an iterator.
+    ///
+    /// # Returns
+    ///
+    /// An iterator over references to all available transcripts.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    ///
+    /// // Print info about all available transcripts
+    /// for transcript in transcript_list.transcripts() {
+    ///     println!("Language: {} ({}), Auto-generated: {}",
+    ///         transcript.language(),
+    ///         transcript.language_code(),
+    ///         transcript.is_generated());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn transcripts(&self) -> impl Iterator<Item = &Transcript> {
+        self.into_iter()
     }
 }
 

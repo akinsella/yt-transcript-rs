@@ -1,6 +1,5 @@
 use anyhow::Result;
 use yt_transcript_rs::api::YouTubeTranscriptApi;
-use std::path::Path;
 
 /// This example demonstrates how to handle cookie consent requirements when using
 /// the YouTube Transcript API.
@@ -35,7 +34,10 @@ async fn main() -> Result<()> {
     println!("(If you're in the EU or other regions with cookie consent laws,");
     println!(" the API will automatically handle the consent requirements)");
 
-    match api.fetch_transcript(video_id, languages, preserve_formatting).await {
+    match api
+        .fetch_transcript(video_id, languages, preserve_formatting)
+        .await
+    {
         Ok(transcript) => {
             println!("\nSuccessfully fetched transcript!");
             println!("Video ID: {}", transcript.video_id);
@@ -47,7 +49,7 @@ async fn main() -> Result<()> {
             println!("Number of snippets: {}", transcript.snippets.len());
             println!("\nTranscript content (first 5 snippets):");
 
-            for (i, snippet) in transcript.snippets.iter().take(5).enumerate() {
+            for (_i, snippet) in transcript.snippets.iter().take(5).enumerate() {
                 println!(
                     "[{:.1}-{:.1}s] {}",
                     snippet.start,

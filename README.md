@@ -1,13 +1,54 @@
-`yt-transcript-rs` is heavily inspired from the python module [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) originally developed by [Jonas Depoix](https://github.com/jdepoix).
+# yt-transcript-rs
 
-## Install
+`yt-transcript-rs` is a Rust library for fetching and working with YouTube video transcripts. It allows you to retrieve transcripts in various languages, list available transcripts for a video, and fetch video details.
+
+[![Crates.io](https://img.shields.io/crates/v/yt-transcript-rs.svg)](https://crates.io/crates/yt-transcript-rs)
+[![Documentation](https://docs.rs/yt-transcript-rs/badge.svg)](https://docs.rs/yt-transcript-rs)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+This project is heavily inspired by the Python module [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) originally developed by [Jonas Depoix](https://github.com/jdepoix).
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Fetch a transcript](#fetch-a-transcript)
+  - [List available transcripts](#list-available-transcripts)
+  - [Fetch video details](#fetch-video-details)
+- [Requirements](#requirements)
+- [Advanced Usage](#advanced-usage)
+  - [Using Proxies](#using-proxies)
+  - [Using Cookie Authentication](#using-cookie-authentication)
+- [Error Handling](#error-handling)
+- [License](#license)
+- [Contributing](#contributing)
+- [Acknowledgments](#acknowledgments)
+
+## Features
+
+- Fetch transcripts from YouTube videos in various languages
+- List all available transcripts for a video
+- Retrieve translations of transcripts
+- Get detailed information about YouTube videos
+- Support for proxy configuration and cookie authentication
+
+## Installation
+
+Add `yt-transcript-rs` to your `Cargo.toml`:
 
 ```bash
 cargo add yt-transcript-rs
 ```
 
+Or manually add it to your `Cargo.toml`:
 
-## API
+```toml
+[dependencies]
+yt-transcript-rs = "0.1.0"  # Replace with the latest version
+```
+
+## Usage
 
 ### Fetch a transcript
 
@@ -227,3 +268,145 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+## Requirements
+
+- Rust 1.56 or higher
+- `tokio` for async execution
+
+## Advanced Usage
+
+### Using Proxies
+
+You can configure the API to use a proxy server:
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::{YouTubeTranscriptApi, ProxyConfig};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Create a proxy configuration
+    let proxy = ProxyConfig {
+        url: "http://your-proxy-server:8080".to_string(),
+        username: Some("username".to_string()),
+        password: Some("password".to_string()),
+    };
+
+    // Initialize the API with proxy
+    let api = YouTubeTranscriptApi::new(Some(proxy), None, None)?;
+    
+    // Use the API as normal
+    let video_id = "5MuIMqhT8DM";
+    let languages = &["en"];
+    let transcript = api.fetch_transcript(video_id, languages, false).await?;
+    
+    println!("Fetched transcript via proxy!");
+    
+    Ok(())
+}
+```
+
+### Using Cookie Authentication
+
+For videos that require authentication:
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Get cookies from a browser session
+    let cookies = "CONSENT=YES+; VISITOR_INFO1_LIVE=abcd1234; LOGIN_INFO=AFmmF2swRQIhAI...";
+    
+    // Initialize the API with cookies
+    let api = YouTubeTranscriptApi::new(None, Some(cookies.to_string()), None)?;
+    
+    // Fetch transcript for a video that requires authentication
+    let video_id = "private_video_id";
+    let languages = &["en"];
+    let transcript = api.fetch_transcript(video_id, languages, false).await?;
+    
+    println!("Successfully authenticated and fetched transcript!");
+    
+    Ok(())
+}
+```
+
+## Error Handling
+
+The library uses the `anyhow` crate for error handling. Here's an example of more robust error handling:
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+use yt_transcript_rs::error::TranscriptError;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let api = YouTubeTranscriptApi::new(None, None, None)?;
+    let video_id = "5MuIMqhT8DM";
+    
+    match api.fetch_transcript(video_id, &["en"], false).await {
+        Ok(transcript) => {
+            println!("Successfully fetched transcript with {} snippets", transcript.snippets.len());
+            Ok(())
+        },
+        Err(e) => {
+            if let Some(transcript_err) = e.downcast_ref::<TranscriptError>() {
+                match transcript_err {
+                    TranscriptError::NoTranscriptFound => {
+                        println!("No transcript found for this video");
+                    },
+                    TranscriptError::TranslationLanguageNotAvailable => {
+                        println!("The requested translation language is not available");
+                    },
+                    TranscriptError::NoTranscriptAvailable => {
+                        println!("No transcript is available for this video");
+                    },
+                    // Handle other specific errors
+                    _ => println!("Other transcript error: {:?}", transcript_err),
+                }
+            } else {
+                println!("Unknown error: {:?}", e);
+            }
+            Err(e)
+        }
+    }
+}
+```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Here's how you can contribute:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/yt-transcript-rs.git
+cd yt-transcript-rs
+
+# Build the project
+cargo build
+
+# Run tests
+cargo test
+```
+
+## Acknowledgments
+
+- [Jonas Depoix](https://github.com/jdepoix) for the original [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) Python library
+- All contributors who have helped improve this library
+

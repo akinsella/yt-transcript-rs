@@ -1,9 +1,7 @@
 use anyhow::Result;
-use yt_transcript_rs::api::YouTubeTranscriptApi;
-use yt_transcript_rs::proxies::{
-    GenericProxyConfig, ProxyConfig, WebshareProxyConfig,
-};
 use std::env;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+use yt_transcript_rs::proxies::{GenericProxyConfig, ProxyConfig, WebshareProxyConfig};
 
 /// This example demonstrates how to use proxies with the YouTube Transcript API.
 ///
@@ -55,7 +53,7 @@ async fn main() -> Result<()> {
                         println!("Number of snippets: {}", transcript.snippets.len());
 
                         // Display the first few snippets
-                        for (i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                        for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
                             println!(
                                 "[{:.1}-{:.1}s] {}",
                                 snippet.start,
@@ -104,7 +102,7 @@ async fn main() -> Result<()> {
                 println!("Number of snippets: {}", transcript.snippets.len());
 
                 // Display the first few snippets
-                for (i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
                     println!(
                         "[{:.1}-{:.1}s] {}",
                         snippet.start,
@@ -135,7 +133,7 @@ async fn main() -> Result<()> {
                 println!("Number of snippets: {}", transcript.snippets.len());
 
                 // Display the first few snippets
-                for (i, snippet) in transcript.snippets.iter().take(3).enumerate() {
+                for (_i, snippet) in transcript.snippets.iter().take(3).enumerate() {
                     println!(
                         "[{:.1}-{:.1}s] {}",
                         snippet.start,

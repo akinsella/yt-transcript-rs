@@ -1,4 +1,4 @@
-use super::test_utils::{create_api, setup, MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID};
+use super::test_utils::{MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID, create_api, setup};
 
 use crate::errors::CouldNotRetrieveTranscriptReason;
 

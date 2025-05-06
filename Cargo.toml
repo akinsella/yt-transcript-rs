@@ -2,27 +2,45 @@
 name = "yt_transcript_rs"
 version = "0.1.0"
 authors = ["Alexis Kinsella <alexis.kinsella@gmail.com>"]
+description = "A Rust library for fetching and working with YouTube video transcripts"
 license = "MIT"
 repository = "https://github.com/akinsella/yt-transcript-rs"
+documentation = "https://docs.rs/yt_transcript_rs"
+readme = "README.md"
+keywords = ["youtube", "transcript", "subtitles", "captions", "video"]
+categories = ["api-bindings", "web-programming", "multimedia"]
 edition = "2024"
 rust-version = "1.86"
 
 [dependencies]
-
-anyhow = "1.0.97"
-
-futures-util = "0.3"
-
-serde = { version = "1.0.152", features = ["alloc", "derive", "serde_derive"] }
-serde_json = "1.0.94"
-
-futures = "0.3.31"
-tokio = { version = "1.44.1", features = ["full"] }
-
-chrono = { version = "0.4.40", features = ["serde"] }
+# Error handling
+anyhow = "1.0.98"
 thiserror = "2.0.12"
-reqwest = { version = "0.12.15", features = ["json", "blocking", "cookies"] }
 
-regex = "1.10.4"
-roxmltree = "0.19.0"
+# HTTP client
+reqwest = { version = "0.12.15", features = ["json", "cookies"] }
+
+# Async runtime
+tokio = { version = "1.45.0", features = ["full", "macros"] }
+
+# Serialization/Deserialization
+serde = { version = "1.0.219", features = ["alloc", "derive", "serde_derive"] }
+serde_json = "1.0.140"
+
+# Date and time
+chrono = { version = "0.4.41", features = ["serde"] }
+
+# Parsing and text processing
+regex = "1.11.1"
+roxmltree = "0.20.0"
 html-escape = "0.2.13"
+
+[dev-dependencies]
+# Testing dependencies
+mockito = "1.7.0"
+
+# Documentation for optimized release build
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

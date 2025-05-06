@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
 
                                         // Display the first 5 snippets of the translated transcript
                                         println!("\nTranslated transcript content:");
-                                        for (i, snippet) in
+                                        for (_i, snippet) in
                                             fetched_transcript.snippets.iter().take(5).enumerate()
                                         {
                                             println!(

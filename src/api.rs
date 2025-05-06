@@ -2,22 +2,124 @@ use reqwest::Client;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::video_data_fetcher::VideoDataFetcher;
 use crate::cookie_jar_loader::CookieJarLoader;
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
 use crate::models::VideoDetails;
 use crate::proxies::ProxyConfig;
+use crate::video_data_fetcher::VideoDataFetcher;
 use crate::{FetchedTranscript, TranscriptList};
 
-/// Main API for fetching YouTube transcripts
+/// # YouTubeTranscriptApi
+///
+/// The main interface for retrieving YouTube video transcripts and metadata.
+///
+/// This API provides methods to:
+/// - Fetch transcripts from YouTube videos in various languages
+/// - List all available transcript languages for a video
+/// - Retrieve detailed video metadata
+///
+/// The API supports advanced features like:
+/// - Custom HTTP clients and proxies for handling geo-restrictions
+/// - Cookie management for accessing restricted content
+/// - Preserving text formatting in transcripts
+///
+/// ## Simple Usage Example
+///
+/// ```rust,no_run
+/// use yt_transcript_rs::api::YouTubeTranscriptApi;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Create a new API instance with default settings
+///     let api = YouTubeTranscriptApi::new(None, None, None)?;
+///     
+///     // Fetch an English transcript
+///     let transcript = api.fetch_transcript(
+///         "dQw4w9WgXcQ",      // Video ID
+///         &["en"],            // Preferred languages
+///         false               // Don't preserve formatting
+///     ).await?;
+///     
+///     // Print each snippet of the transcript
+///     for snippet in transcript.parts() {
+///         println!("[{:.1}s]: {}", snippet.start, snippet.text);
+///     }
+///     
+///     Ok(())
+/// }
+/// ```
 #[derive(Clone)]
 pub struct YouTubeTranscriptApi {
+    /// The internal data fetcher used to retrieve information from YouTube
     fetcher: Arc<VideoDataFetcher>,
-    client: Client,
 }
 
 impl YouTubeTranscriptApi {
-    /// Create a new instance of the API
+    /// Creates a new YouTube Transcript API instance.
+    ///
+    /// This method initializes an API instance with optional customizations for
+    /// cookies, proxies, and HTTP client settings.
+    ///
+    /// # Parameters
+    ///
+    /// * `cookie_path` - Optional path to a Netscape-format cookie file for authenticated requests
+    /// * `proxy_config` - Optional proxy configuration for routing requests through a proxy service
+    /// * `http_client` - Optional pre-configured HTTP client to use instead of the default one
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, CookieError>` - A new API instance or a cookie-related error
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The cookie file exists but cannot be read or parsed
+    /// - The cookie file is not in the expected Netscape format
+    ///
+    /// # Examples
+    ///
+    /// ## Basic usage with default settings
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Using a cookie file for authenticated access
+    ///
+    /// ```rust,no_run
+    /// # use std::path::Path;
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cookie_path = Path::new("path/to/cookies.txt");
+    /// let api = YouTubeTranscriptApi::new(Some(&cookie_path), None, None)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Using a proxy to bypass geographical restrictions
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # use yt_transcript_rs::proxies::GenericProxyConfig;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// // Create a proxy configuration
+    /// let proxy = GenericProxyConfig::new(
+    ///     Some("http://proxy.example.com:8080".to_string()),
+    ///     None
+    /// )?;
+    ///
+    /// let api = YouTubeTranscriptApi::new(
+    ///     None,
+    ///     Some(Box::new(proxy)),
+    ///     None
+    /// )?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new(
         cookie_path: Option<&Path>,
         proxy_config: Option<Box<dyn ProxyConfig + Send + Sync>>,
@@ -84,10 +186,78 @@ impl YouTubeTranscriptApi {
 
         let fetcher = Arc::new(VideoDataFetcher::new(client.clone(), proxy_config));
 
-        Ok(Self { fetcher, client })
+        Ok(Self { fetcher })
     }
 
-    /// Fetch a transcript for a single video
+    /// Fetches a transcript for a YouTube video in the specified languages.
+    ///
+    /// This method attempts to retrieve a transcript in the first available language
+    /// from the provided list of language preferences. If none of the specified languages
+    /// are available, an error is returned.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ" from https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+    /// * `languages` - A list of language codes in order of preference (e.g., ["en", "es", "fr"])
+    /// * `preserve_formatting` - Whether to preserve HTML formatting in the transcript text
+    ///
+    /// # Returns
+    ///
+    /// * `Result<FetchedTranscript, CouldNotRetrieveTranscript>` - The transcript or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if:
+    /// - The video does not exist or is private
+    /// - The video has no transcripts available
+    /// - None of the requested languages are available
+    /// - Network issues prevent fetching the transcript
+    ///
+    /// # Examples
+    ///
+    /// ## Basic usage - get English transcript
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Fetch English transcript
+    /// let transcript = api.fetch_transcript(
+    ///     "dQw4w9WgXcQ",  // Video ID
+    ///     &["en"],        // Try English
+    ///     false           // Don't preserve formatting
+    /// ).await?;
+    ///
+    /// println!("Full transcript text: {}", transcript.text());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Multiple language preferences with formatting preserved
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Try English first, then Spanish, then auto-generated English
+    /// let transcript = api.fetch_transcript(
+    ///     "dQw4w9WgXcQ",
+    ///     &["en", "es", "en-US"],
+    ///     true  // Preserve formatting like <b>bold</b> text
+    /// ).await?;
+    ///
+    /// // Print each segment with timing information
+    /// for snippet in transcript.parts() {
+    ///     println!("[{:.1}s-{:.1}s]: {}",
+    ///         snippet.start,
+    ///         snippet.start + snippet.duration,
+    ///         snippet.text);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn fetch_transcript(
         &self,
         video_id: &str,
@@ -99,7 +269,46 @@ impl YouTubeTranscriptApi {
         transcript.fetch(preserve_formatting).await
     }
 
-    /// List all available transcripts for a video
+    /// Lists all available transcripts for a YouTube video.
+    ///
+    /// This method retrieves information about all available transcripts for a video,
+    /// including both manual and automatically generated captions in all languages.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ")
+    ///
+    /// # Returns
+    ///
+    /// * `Result<TranscriptList, CouldNotRetrieveTranscript>` - A list of available transcripts or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if:
+    /// - The video does not exist or is private
+    /// - The video has no transcripts available
+    /// - Network issues prevent fetching the transcript list
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Get all available transcripts
+    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    ///
+    /// // Print information about each available transcript
+    /// for transcript in transcript_list.transcripts() {
+    ///     println!("Language: {} ({}) - {} generated",
+    ///         transcript.language(),
+    ///         transcript.language_code(),
+    ///         if transcript.is_generated() { "Auto" } else { "Manually" });
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_transcripts(
         &self,
         video_id: &str,
@@ -107,7 +316,56 @@ impl YouTubeTranscriptApi {
         self.fetcher.fetch_transcript_list(video_id).await
     }
 
-    /// Fetch video details (title, description, view count, etc.)
+    /// Fetches detailed metadata about a YouTube video.
+    ///
+    /// This method retrieves comprehensive information about a video, including its
+    /// title, author, view count, description, thumbnails, and other metadata.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ")
+    ///
+    /// # Returns
+    ///
+    /// * `Result<VideoDetails, CouldNotRetrieveTranscript>` - Video details or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if:
+    /// - The video does not exist or is private
+    /// - Network issues prevent fetching the video details
+    /// - The YouTube page structure has changed and details cannot be extracted
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Fetch details about a video
+    /// let details = api.fetch_video_details("dQw4w9WgXcQ").await?;
+    ///
+    /// // Print basic information
+    /// println!("Title: {}", details.title);
+    /// println!("Channel: {}", details.author);
+    /// println!("Views: {}", details.view_count);
+    /// println!("Duration: {} seconds", details.length_seconds);
+    ///
+    /// // Print keywords if available
+    /// if let Some(keywords) = &details.keywords {
+    ///     println!("Keywords: {}", keywords.join(", "));
+    /// }
+    ///
+    /// // Get the highest quality thumbnail
+    /// if let Some(best_thumb) = details.thumbnails.iter()
+    ///     .max_by_key(|t| t.width * t.height) {
+    ///     println!("Best thumbnail: {} ({}x{})",
+    ///         best_thumb.url, best_thumb.width, best_thumb.height);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn fetch_video_details(
         &self,
         video_id: &str,
