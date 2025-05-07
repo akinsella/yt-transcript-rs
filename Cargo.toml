@@ -9,8 +9,7 @@ documentation = "https://docs.rs/yt-transcript-rs"
 readme = "README.md"
 keywords = ["youtube", "transcript", "subtitles", "captions", "video"]
 categories = ["api-bindings", "web-programming", "multimedia"]
-edition = "2024"
-rust-version = "1.86"
+edition = "2021"
 
 [dependencies]
 # Error handling
