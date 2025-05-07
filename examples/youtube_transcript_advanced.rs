@@ -9,8 +9,7 @@ use yt_transcript_rs::proxies::{GenericProxyConfig, ProxyConfig};
 /// 1. Cookie authentication for age-restricted videos
 /// 2. Proxy configuration for bypassing IP blocks
 /// 3. Consent cookie handling for EU regions
-/// 4. Multiple transcript formats (JSON, SRT, plain text)
-/// 5. Detailed error handling for all scenarios
+/// 4. Detailed error handling for all scenarios
 ///
 /// You can customize this example by setting environment variables:
 /// - YOUTUBE_COOKIE_FILE: Path to a cookies.txt file for auth
@@ -20,7 +19,7 @@ use yt_transcript_rs::proxies::{GenericProxyConfig, ProxyConfig};
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("YouTube Transcript API - Advanced Example");
-    println!("----------------------------------------");
+    println!("-----------------------------------------");
 
     // === 1. Set up configuration from environment variables ===
 
@@ -46,8 +45,12 @@ async fn main() -> Result<()> {
     // Video ID
     let video_id = env::var("VIDEO_ID").unwrap_or_else(|_| {
         if cookie_file.is_some() {
+            // Some age-restricted videos:
+            // - "Eminem - The Way I Am (Clean Version)" (https://www.youtube.com/watch?v=mQvteoFiMlg&rco=1)
+            // - "Michael Jackson - They Don't Care About Us (Prison Version) (Official Video)" (https://www.youtube.com/watch?v=t1pqi8vjTLY)
+            // - "The Weeknd - In Your Eyes (Official Video)" (https://www.youtube.com/watch?v=dqRZDebPIGs)
             // If we have cookie auth, try a potentially age-restricted video
-            "kJQP7kiw5Fk".to_string() // "Despacito" by Luis Fonsi
+            "mQvteoFiMlg".to_string() // Eminem - The Way I Am (Clean Version)
         } else {
             // Otherwise use a video without restrictions
             "arj7oStGLkU".to_string() // TED Talk
@@ -102,7 +105,7 @@ async fn main() -> Result<()> {
             println!("Is auto-generated: {}", transcript.is_generated);
             println!("Number of snippets: {}", transcript.snippets.len());
 
-            // === 4. Format the transcript in different ways ===
+            // === 4. Format the transcript as Pretty JSON ===
 
             // JSON format
             let json_output = serde_json::to_string_pretty(&transcript).unwrap();

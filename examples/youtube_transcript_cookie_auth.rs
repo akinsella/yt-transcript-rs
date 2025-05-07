@@ -21,9 +21,7 @@ use yt_transcript_rs::api::YouTubeTranscriptApi;
 /// export YOUTUBE_COOKIE_FILE=/path/to/your/cookies.txt
 ///
 /// You can export cookies from your browser using extensions like:
-/// - "Get cookies.txt" (Chrome/Firefox)
-/// - "Cookie-Editor" (Chrome/Firefox)
-/// - "EditThisCookie" (Chrome)
+/// - https://chromewebstore.google.com/search/cookie (Chrome)
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("YouTube Transcript API - Cookie Authentication Example");
@@ -50,7 +48,12 @@ async fn main() -> Result<()> {
     // If no cookie auth, try a regular video
     let video_id = if cookie_file.is_some() {
         // A potentially age-restricted video
-        "kJQP7kiw5Fk" // "Despacito" by Luis Fonsi - often age-restricted
+        // Some age-restricted videos:
+        // - "Eminem - The Way I Am (Clean Version)" (https://www.youtube.com/watch?v=mQvteoFiMlg&rco=1)
+        // - "Michael Jackson - They Don't Care About Us (Prison Version) (Official Video)" (https://www.youtube.com/watch?v=t1pqi8vjTLY)
+        // - "The Weeknd - In Your Eyes (Official Video)" (https://www.youtube.com/watch?v=dqRZDebPIGs)
+        // If we have cookie auth, try a potentially age-restricted video
+        "mQvteoFiMlg" // Eminem - The Way I Am (Clean Version)
     } else {
         // A regular video without restrictions
         "arj7oStGLkU" // TED Talk
