@@ -191,7 +191,7 @@ impl StreamingDataExtractor {
         });
 
         // Extract color_info if present
-        let color_info = format_json.get("colorInfo").and_then(|color| {
+        let color_info = format_json.get("colorInfo").map(|color| {
             let primaries = color
                 .get("primaries")
                 .and_then(|v| v.as_str())
@@ -205,11 +205,11 @@ impl StreamingDataExtractor {
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
 
-            Some(ColorInfo {
+            ColorInfo {
                 primaries,
                 transfer_characteristics,
                 matrix_coefficients,
-            })
+            }
         });
 
         Some(StreamingFormat {

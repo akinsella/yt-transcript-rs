@@ -5,8 +5,8 @@ use serde_json::json;
 
 use crate::fetched_transcript::FetchedTranscript;
 use crate::models::{
-    ColorInfo, FetchedTranscriptSnippet, MicroformatData, MicroformatEmbed, MicroformatThumbnail,
-    Range, StreamingData, StreamingFormat, TranslationLanguage, VideoThumbnail,
+    FetchedTranscriptSnippet, MicroformatData, MicroformatEmbed, MicroformatThumbnail, Range,
+    StreamingData, StreamingFormat, TranslationLanguage, VideoThumbnail,
 };
 use crate::transcript::Transcript;
 use crate::transcript_list::TranscriptList;

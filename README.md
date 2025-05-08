@@ -538,6 +538,18 @@ cargo build
 
 # Run tests
 cargo test
+
+# Run Clippy with strict settings for code quality
+cargo clippy --all-targets --features ci --all-features -- -D warnings
+
+# Run Clippy in fix mode to automatically apply suggested fixes
+cargo clippy --all-targets --features ci --all-features --fix -- -D warnings
+
+# Format code according to Rust style guidelines
+cargo fmt
+
+# Format and overwrite files with the formatting changes
+cargo fmt --all
 ```
 
 ## Acknowledgments

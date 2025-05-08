@@ -185,7 +185,7 @@ async fn main() -> Result<()> {
             if let Some(abr_url) = &streaming_data.server_abr_streaming_url {
                 println!(
                     "\nServer ABR streaming URL available: {}",
-                    abr_url.len() > 0
+                    !abr_url.is_empty()
                 );
             }
         }
