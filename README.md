@@ -17,6 +17,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
   - [Fetch a transcript](#fetch-a-transcript)
   - [List available transcripts](#list-available-transcripts)
   - [Fetch video details](#fetch-video-details)
+  - [Fetch microformat data](#fetch-microformat-data)
 - [Requirements](#requirements)
 - [Advanced Usage](#advanced-usage)
   - [Using Proxies](#using-proxies)
@@ -263,6 +264,74 @@ async fn main() -> Result<()> {
         }
         Err(e) => {
             println!("Failed to fetch video details: {:?}", e);
+        }
+    }
+
+    Ok(())
+}
+
+### Fetch microformat data
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Initialize the YouTubeTranscriptApi
+    let api = YouTubeTranscriptApi::new(None, None, None)?;
+
+    // Ted Talk video ID
+    let video_id = "arj7oStGLkU";
+
+    println!("Fetching microformat data for: {}", video_id);
+
+    match api.fetch_microformat(video_id).await {
+        Ok(microformat) => {
+            println!("\nMicroformat Data:");
+            println!("-----------------");
+
+            // Print video title and channel info
+            if let Some(title) = &microformat.title {
+                println!("Title: {}", title);
+            }
+            if let Some(channel) = &microformat.owner_channel_name {
+                println!("Channel: {}", channel);
+            }
+
+            // Print video stats
+            if let Some(views) = &microformat.view_count {
+                println!("View Count: {}", views);
+            }
+            if let Some(likes) = &microformat.like_count {
+                println!("Like Count: {}", likes);
+            }
+
+            // Print video status and category
+            if let Some(category) = &microformat.category {
+                println!("Category: {}", category);
+            }
+            if let Some(is_unlisted) = microformat.is_unlisted {
+                println!("Is Unlisted: {}", is_unlisted);
+            }
+            if let Some(is_family_safe) = microformat.is_family_safe {
+                println!("Is Family Safe: {}", is_family_safe);
+            }
+
+            // Print countries where video is available
+            if let Some(countries) = &microformat.available_countries {
+                println!("Available in {} countries", countries.len());
+            }
+
+            // Print embed information
+            if let Some(embed) = &microformat.embed {
+                if let Some(iframe_url) = &embed.iframe_url {
+                    println!("Embed URL: {}", iframe_url);
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed to fetch microformat data: {:?}", e);
         }
     }
 
