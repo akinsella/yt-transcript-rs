@@ -171,7 +171,7 @@ pub trait ProxyConfig: Debug + Send + Sync {
 pub struct GenericProxyConfig {
     /// URL for HTTP proxy (format: "http://[username:password@]host:port")
     pub http_url: Option<String>,
-    /// URL for HTTPS proxy (format: "http://[username:password@]host:port")
+    /// URL for HTTPS proxy (format: "https://[username:password@]host:port")
     pub https_url: Option<String>,
 }
 

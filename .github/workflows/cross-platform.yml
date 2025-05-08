@@ -26,8 +26,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+      # - name: Cache dependencies
+      #   uses: Swatinem/rust-cache@v2
       
       - name: Build
         run: cargo build --verbose
