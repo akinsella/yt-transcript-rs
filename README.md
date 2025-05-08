@@ -18,6 +18,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
   - [List available transcripts](#list-available-transcripts)
   - [Fetch video details](#fetch-video-details)
   - [Fetch microformat data](#fetch-microformat-data)
+  - [Fetch streaming data](#fetch-streaming-data)
 - [Requirements](#requirements)
 - [Advanced Usage](#advanced-usage)
   - [Using Proxies](#using-proxies)
@@ -33,6 +34,8 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
 - List all available transcripts for a video
 - Retrieve translations of transcripts
 - Get detailed information about YouTube videos
+- Access video microformat data including available countries and embed information
+- Retrieve streaming formats and quality options for videos
 - Support for proxy configuration and cookie authentication
 
 ## Installation
@@ -339,6 +342,70 @@ async fn main() -> Result<()> {
 }
 ```
 
+### Fetch streaming data
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("YouTube Streaming Data Example");
+    println!("------------------------------");
+
+    // Initialize the YouTubeTranscriptApi
+    let api = YouTubeTranscriptApi::new(None, None, None)?;
+
+    // Ted Talk video ID
+    let video_id = "arj7oStGLkU";
+
+    println!("Fetching streaming data for: {}", video_id);
+
+    match api.fetch_streaming_data(video_id).await {
+        Ok(streaming_data) => {
+            println!("\nStreaming Data:");
+            println!("--------------");
+            println!("Expires in: {} seconds", streaming_data.expires_in_seconds);
+            
+            // Display basic format counts
+            println!("\nCombined Formats (video+audio): {}", streaming_data.formats.len());
+            println!("Adaptive Formats: {}", streaming_data.adaptive_formats.len());
+            
+            // Example of accessing video format information
+            if let Some(format) = streaming_data.formats.first() {
+                println!("\nSample format information:");
+                println!("  ITAG: {}", format.itag);
+                if let (Some(w), Some(h)) = (format.width, format.height) {
+                    println!("  Resolution: {}x{}", w, h);
+                }
+                println!("  Bitrate: {} bps", format.bitrate);
+                println!("  MIME type: {}", format.mime_type);
+            }
+            
+            // Count video and audio format types
+            let video_count = streaming_data.adaptive_formats
+                .iter()
+                .filter(|f| f.mime_type.starts_with("video/"))
+                .count();
+                
+            let audio_count = streaming_data.adaptive_formats
+                .iter()
+                .filter(|f| f.mime_type.starts_with("audio/"))
+                .count();
+                
+            println!("\nAdaptive format breakdown:");
+            println!("  Video formats: {}", video_count);
+            println!("  Audio formats: {}", audio_count);
+        }
+        Err(e) => {
+            println!("Failed to fetch streaming data: {:?}", e);
+        }
+    }
+
+    Ok(())
+}
+```
+
 ## Requirements
 
 - Rust 1.56 or higher
@@ -352,16 +419,17 @@ You can configure the API to use a proxy server:
 
 ```rust
 use anyhow::Result;
-use yt_transcript_rs::api::{YouTubeTranscriptApi, ProxyConfig};
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+use yt_transcript_rs::proxies::ProxyConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Create a proxy configuration
-    let proxy = ProxyConfig {
+    let proxy = Box::new(ProxyConfig {
         url: "http://your-proxy-server:8080".to_string(),
         username: Some("username".to_string()),
         password: Some("password".to_string()),
-    };
+    });
 
     // Initialize the API with proxy
     let api = YouTubeTranscriptApi::new(Some(proxy), None, None)?;
@@ -384,14 +452,15 @@ For videos that require authentication:
 ```rust
 use anyhow::Result;
 use yt_transcript_rs::api::YouTubeTranscriptApi;
+use std::path::Path;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Get cookies from a browser session
-    let cookies = "CONSENT=YES+; VISITOR_INFO1_LIVE=abcd1234; LOGIN_INFO=AFmmF2swRQIhAI...";
+    // Provide path to cookies file exported from browser
+    let cookie_path = Path::new("path/to/cookies.txt");
     
     // Initialize the API with cookies
-    let api = YouTubeTranscriptApi::new(None, Some(cookies.to_string()), None)?;
+    let api = YouTubeTranscriptApi::new(Some(cookie_path.as_ref()), None, None)?;
     
     // Fetch transcript for a video that requires authentication
     let video_id = "private_video_id";
@@ -406,12 +475,12 @@ async fn main() -> Result<()> {
 
 ## Error Handling
 
-The library uses the `anyhow` crate for error handling. Here's an example of more robust error handling:
+The library provides specific error types for handling different failure scenarios:
 
 ```rust
 use anyhow::Result;
 use yt_transcript_rs::api::YouTubeTranscriptApi;
-use yt_transcript_rs::error::TranscriptError;
+use yt_transcript_rs::errors::CouldNotRetrieveTranscriptReason;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -424,24 +493,20 @@ async fn main() -> Result<()> {
             Ok(())
         },
         Err(e) => {
-            if let Some(transcript_err) = e.downcast_ref::<TranscriptError>() {
-                match transcript_err {
-                    TranscriptError::NoTranscriptFound => {
-                        println!("No transcript found for this video");
-                    },
-                    TranscriptError::TranslationLanguageNotAvailable => {
-                        println!("The requested translation language is not available");
-                    },
-                    TranscriptError::NoTranscriptAvailable => {
-                        println!("No transcript is available for this video");
-                    },
-                    // Handle other specific errors
-                    _ => println!("Other transcript error: {:?}", transcript_err),
-                }
-            } else {
-                println!("Unknown error: {:?}", e);
+            match e.reason {
+                Some(CouldNotRetrieveTranscriptReason::NoTranscriptFound) => {
+                    println!("No transcript found for this video");
+                },
+                Some(CouldNotRetrieveTranscriptReason::TranslationLanguageNotAvailable) => {
+                    println!("The requested translation language is not available");
+                },
+                Some(CouldNotRetrieveTranscriptReason::VideoUnavailable) => {
+                    println!("The video is unavailable or does not exist");
+                },
+                // Handle other specific errors
+                _ => println!("Other error: {:?}", e),
             }
-            Err(e)
+            Err(e.into())
         }
     }
 }

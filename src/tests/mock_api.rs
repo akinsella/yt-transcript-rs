@@ -290,3 +290,54 @@ async fn test_fetch_microformat() {
         panic!("Thumbnail information is missing");
     }
 }
+
+#[test]
+async fn test_fetch_streaming_data() {
+    // Create mock streaming data
+    use crate::tests::mocks::create_mock_streaming_data;
+
+    let streaming_data = create_mock_streaming_data();
+
+    // Verify basic properties
+    assert_eq!(streaming_data.expires_in_seconds, "21540");
+    assert!(!streaming_data.formats.is_empty());
+    assert!(!streaming_data.adaptive_formats.is_empty());
+
+    // Check combined format properties
+    let format = &streaming_data.formats[0];
+    assert_eq!(format.itag, 18);
+    assert_eq!(format.width, Some(640));
+    assert_eq!(format.height, Some(360));
+    assert_eq!(format.quality, "medium");
+    assert_eq!(format.quality_label, Some("360p".to_string()));
+
+    // Check adaptive format properties
+    // Find video format
+    let video_format = streaming_data
+        .adaptive_formats
+        .iter()
+        .find(|f| f.itag == 136)
+        .expect("Missing expected video format");
+
+    assert_eq!(video_format.width, Some(1280));
+    assert_eq!(video_format.height, Some(720));
+    assert!(video_format.init_range.is_some());
+    assert!(video_format.index_range.is_some());
+
+    // Find audio format
+    let audio_format = streaming_data
+        .adaptive_formats
+        .iter()
+        .find(|f| f.itag == 140)
+        .expect("Missing expected audio format");
+
+    assert_eq!(
+        audio_format.audio_quality,
+        Some("AUDIO_QUALITY_MEDIUM".to_string())
+    );
+    assert_eq!(audio_format.audio_sample_rate, Some("44100".to_string()));
+    assert_eq!(audio_format.audio_channels, Some(2));
+
+    // Check server ABR streaming URL
+    assert!(streaming_data.server_abr_streaming_url.is_some());
+}

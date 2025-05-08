@@ -101,3 +101,74 @@ async fn test_fetch_microformat() {
     let result = api.fetch_microformat(NON_EXISTENT_VIDEO_ID).await;
     assert!(result.is_err(), "Successfully fetched non-existent video");
 }
+
+#[cfg(feature = "ci")]
+#[tokio::test]
+async fn test_fetch_streaming_data() {
+    setup();
+    let api = create_api();
+
+    // Fetch streaming data
+    let streaming_data = api.fetch_streaming_data(MULTILANG_VIDEO_ID).await;
+
+    assert!(streaming_data.is_ok(), "Failed to fetch streaming data");
+    let streaming_data = streaming_data.unwrap();
+
+    // Verify the mock data
+    // Check formats
+    assert!(!streaming_data.formats.is_empty(), "Formats list is empty");
+    let format = &streaming_data.formats[0];
+    assert_eq!(format.itag, 18, "Format itag doesn't match mock data");
+    assert_eq!(
+        format.quality, "medium",
+        "Format quality doesn't match mock data"
+    );
+    assert_eq!(
+        format.width,
+        Some(640),
+        "Format width doesn't match mock data"
+    );
+    assert_eq!(
+        format.height,
+        Some(360),
+        "Format height doesn't match mock data"
+    );
+
+    // Check adaptive formats
+    assert!(
+        !streaming_data.adaptive_formats.is_empty(),
+        "Adaptive formats list is empty"
+    );
+
+    // Find a video format
+    let video_format = streaming_data
+        .adaptive_formats
+        .iter()
+        .find(|f| f.mime_type.starts_with("video/"))
+        .expect("No video format in adaptive formats");
+
+    assert!(video_format.width.is_some(), "Video format has no width");
+    assert!(video_format.height.is_some(), "Video format has no height");
+
+    // Find an audio format
+    let audio_format = streaming_data
+        .adaptive_formats
+        .iter()
+        .find(|f| f.mime_type.starts_with("audio/"))
+        .expect("No audio format in adaptive formats");
+
+    assert!(
+        audio_format.audio_quality.is_some(),
+        "Audio format has no audio quality"
+    );
+
+    // Check expiration
+    assert!(
+        !streaming_data.expires_in_seconds.is_empty(),
+        "Expiration time is empty"
+    );
+
+    // Test non-existent video
+    let result = api.fetch_streaming_data(NON_EXISTENT_VIDEO_ID).await;
+    assert!(result.is_err(), "Successfully fetched non-existent video");
+}

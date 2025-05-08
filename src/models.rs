@@ -263,3 +263,91 @@ pub struct MicroformatThumbnail {
     /// List of thumbnails in different sizes
     pub thumbnails: Option<Vec<VideoThumbnail>>,
 }
+
+/// Represents a range with start and end values
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct Range {
+    /// Start position
+    pub start: String,
+    /// End position
+    pub end: String,
+}
+
+/// Represents color information for a video format
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct ColorInfo {
+    /// Primary colors used
+    pub primaries: Option<String>,
+    /// Transfer characteristics
+    pub transfer_characteristics: Option<String>,
+    /// Matrix coefficients
+    pub matrix_coefficients: Option<String>,
+}
+
+/// Represents a single video or audio format available for streaming
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct StreamingFormat {
+    /// Format identification number
+    pub itag: u32,
+    /// URL to the media
+    pub url: Option<String>,
+    /// MIME type and codec information
+    pub mime_type: String,
+    /// Bitrate in bits per second
+    pub bitrate: u64,
+    /// Video width in pixels (video only)
+    pub width: Option<u32>,
+    /// Video height in pixels (video only)
+    pub height: Option<u32>,
+    /// Initialization range for segmented formats
+    pub init_range: Option<Range>,
+    /// Index range for segmented formats
+    pub index_range: Option<Range>,
+    /// Last modification timestamp
+    pub last_modified: Option<String>,
+    /// Content length in bytes
+    pub content_length: Option<String>,
+    /// Quality label (e.g., "medium", "hd720")
+    pub quality: String,
+    /// Frames per second (video only)
+    pub fps: Option<u32>,
+    /// Human-readable quality label (e.g., "720p")
+    pub quality_label: Option<String>,
+    /// Projection type (e.g., "RECTANGULAR")
+    pub projection_type: String,
+    /// Average bitrate in bits per second
+    pub average_bitrate: Option<u64>,
+    /// Audio quality (audio only)
+    pub audio_quality: Option<String>,
+    /// Approximate duration in milliseconds
+    pub approx_duration_ms: String,
+    /// Audio sample rate (audio only)
+    pub audio_sample_rate: Option<String>,
+    /// Number of audio channels (audio only)
+    pub audio_channels: Option<u32>,
+    /// Quality ordinal value
+    pub quality_ordinal: Option<String>,
+    /// High replication flag
+    pub high_replication: Option<bool>,
+    /// Color information
+    pub color_info: Option<ColorInfo>,
+    /// Loudness in decibels (audio only)
+    pub loudness_db: Option<f64>,
+    /// Whether DRC (Dynamic Range Compression) is used
+    pub is_drc: Option<bool>,
+    /// Extra tags
+    pub xtags: Option<String>,
+}
+
+/// Represents all available streaming data for a YouTube video
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct StreamingData {
+    /// Time in seconds until the streaming URLs expire
+    pub expires_in_seconds: String,
+    /// Combined formats with both audio and video
+    pub formats: Vec<StreamingFormat>,
+    /// Separate adaptive formats for audio or video
+    pub adaptive_formats: Vec<StreamingFormat>,
+    /// Server ABR streaming URL
+    pub server_abr_streaming_url: Option<String>,
+}

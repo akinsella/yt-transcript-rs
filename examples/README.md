@@ -171,4 +171,21 @@ This example demonstrates how to fetch microformat data from a YouTube video usi
 5. Publication and upload dates
 6. Like count and other engagement metrics
 
-Microformat data is useful for understanding content restrictions, embedding videos, and gathering more comprehensive metadata about YouTube videos. 
+Microformat data is useful for understanding content restrictions, embedding videos, and gathering more comprehensive metadata about YouTube videos.
+
+### Fetching Streaming Data
+
+```bash
+cargo run --example youtube_streaming_data
+```
+
+This example demonstrates how to fetch streaming data from a YouTube video using the API. The streaming data contains comprehensive information about available video and audio formats:
+
+1. Combined formats (with both video and audio in a single stream)
+2. Adaptive formats (separate video and audio streams for dynamic quality adjustment)
+3. Various quality options (resolutions from 144p to 1080p+)
+4. Format details (codec, bitrate, FPS, file type)
+5. Technical specifications (initialization ranges, color information)
+6. Audio characteristics (sample rate, channels, quality levels)
+
+This functionality is useful for applications that need to access or analyze YouTube's media streams, understand available quality options, or implement custom video players with advanced format selection capabilities. 

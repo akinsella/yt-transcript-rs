@@ -3,9 +3,10 @@ use reqwest::Client;
 use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::js_var_parser::JsVarParser;
 use crate::microformat_extractor::MicroformatExtractor;
-use crate::models::{MicroformatData, VideoDetails};
+use crate::models::{MicroformatData, StreamingData, VideoDetails};
 use crate::playability_asserter::PlayabilityAsserter;
 use crate::proxies::ProxyConfig;
+use crate::streaming_data_extractor::StreamingDataExtractor;
 use crate::transcript_list::TranscriptList;
 use crate::video_details_extractor::VideoDetailsExtractor;
 use crate::youtube_page_fetcher::YoutubePageFetcher;
@@ -255,6 +256,70 @@ impl VideoDataFetcher {
 
         // Extract microformat data from player response
         MicroformatExtractor::extract_microformat_data(&player_response, video_id)
+    }
+
+    /// Fetches streaming data for a YouTube video.
+    ///
+    /// This method retrieves information about available video and audio formats, including:
+    /// - URLs for different quality versions of the video
+    /// - Resolution, bitrate, and codec information
+    /// - Both combined formats (with audio and video) and separate adaptive formats
+    /// - Information about format expiration
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID
+    ///
+    /// # Returns
+    ///
+    /// * `Result<StreamingData, CouldNotRetrieveTranscript>` - Streaming data on success, or an error
+    ///
+    /// # Errors
+    ///
+    /// This method can fail if:
+    /// - The video doesn't exist or is private
+    /// - The video has geo-restrictions that prevent access
+    /// - YouTube's HTML structure has changed and parsing fails
+    /// - Network errors occur during the request
+    ///
+    /// # Example (internal usage)
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let video_id = "dQw4w9WgXcQ";
+    ///
+    /// // This internally calls VideoDataFetcher::fetch_streaming_data
+    /// let streaming = api.fetch_streaming_data(video_id).await?;
+    ///
+    /// // Print information about available formats
+    /// println!("Available formats: {}", streaming.formats.len());
+    /// println!("Adaptive formats: {}", streaming.adaptive_formats.len());
+    /// println!("Expires in: {} seconds", streaming.expires_in_seconds);
+    ///
+    /// // Find highest quality video format
+    /// if let Some(best_format) = streaming.adaptive_formats.iter()
+    ///     .filter(|f| f.width.is_some() && f.height.is_some())
+    ///     .max_by_key(|f| f.height.unwrap_or(0)) {
+    ///     println!("Highest quality: {}p", best_format.height.unwrap());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn fetch_streaming_data(
+        &self,
+        video_id: &str,
+    ) -> Result<StreamingData, CouldNotRetrieveTranscript> {
+        // Fetch the HTML and extract player response
+        let html = self.page_fetcher.fetch_video_page(video_id).await?;
+        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
+
+        // Check playability status
+        PlayabilityAsserter::assert_playability(&player_response, video_id)?;
+
+        // Extract streaming data from player response
+        StreamingDataExtractor::extract_streaming_data(&player_response, video_id)
     }
 
     /// Extracts the ytInitialPlayerResponse JavaScript variable from YouTube's HTML.

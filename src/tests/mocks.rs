@@ -5,8 +5,8 @@ use serde_json::json;
 
 use crate::fetched_transcript::FetchedTranscript;
 use crate::models::{
-    FetchedTranscriptSnippet, MicroformatData, MicroformatEmbed, MicroformatThumbnail,
-    TranslationLanguage, VideoThumbnail,
+    ColorInfo, FetchedTranscriptSnippet, MicroformatData, MicroformatEmbed, MicroformatThumbnail,
+    Range, StreamingData, StreamingFormat, TranslationLanguage, VideoThumbnail,
 };
 use crate::transcript::Transcript;
 use crate::transcript_list::TranscriptList;
@@ -241,5 +241,114 @@ pub fn create_mock_microformat_data() -> MicroformatData {
         title: Some("Mock Video Title".to_string()),
         upload_date: Some("2023-01-01T12:00:00Z".to_string()),
         view_count: Some("10000".to_string()),
+    }
+}
+
+/// Creates a mock StreamingData object for testing
+///
+/// This function generates a realistic but simplified set of streaming data
+/// with both combined and adaptive formats, similar to what would be returned
+/// from a real YouTube video.
+pub fn create_mock_streaming_data() -> StreamingData {
+    StreamingData {
+        expires_in_seconds: "21540".to_string(),
+        formats: vec![StreamingFormat {
+            itag: 18,
+            url: Some("https://example.com/video.mp4".to_string()),
+            mime_type: "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"".to_string(),
+            bitrate: 347177,
+            width: Some(640),
+            height: Some(360),
+            init_range: None,
+            index_range: None,
+            last_modified: Some("1739036631573310".to_string()),
+            content_length: Some("36612752".to_string()),
+            quality: "medium".to_string(),
+            fps: Some(24),
+            quality_label: Some("360p".to_string()),
+            projection_type: "RECTANGULAR".to_string(),
+            average_bitrate: Some(347136),
+            audio_quality: Some("AUDIO_QUALITY_LOW".to_string()),
+            approx_duration_ms: "843766".to_string(),
+            audio_sample_rate: Some("44100".to_string()),
+            audio_channels: Some(2),
+            quality_ordinal: Some("QUALITY_ORDINAL_360P".to_string()),
+            high_replication: None,
+            color_info: None,
+            loudness_db: None,
+            is_drc: None,
+            xtags: None,
+        }],
+        adaptive_formats: vec![
+            // High quality video format
+            StreamingFormat {
+                itag: 136,
+                url: Some("https://example.com/video_720p.mp4".to_string()),
+                mime_type: "video/mp4; codecs=\"avc1.4d401f\"".to_string(),
+                bitrate: 582678,
+                width: Some(1280),
+                height: Some(720),
+                init_range: Some(Range {
+                    start: "0".to_string(),
+                    end: "739".to_string(),
+                }),
+                index_range: Some(Range {
+                    start: "740".to_string(),
+                    end: "2703".to_string(),
+                }),
+                last_modified: Some("1739044586331610".to_string()),
+                content_length: Some("26758604".to_string()),
+                quality: "hd720".to_string(),
+                fps: Some(24),
+                quality_label: Some("720p".to_string()),
+                projection_type: "RECTANGULAR".to_string(),
+                average_bitrate: Some(253736),
+                audio_quality: None,
+                approx_duration_ms: "843666".to_string(),
+                audio_sample_rate: None,
+                audio_channels: None,
+                quality_ordinal: Some("QUALITY_ORDINAL_720P".to_string()),
+                high_replication: None,
+                color_info: None,
+                loudness_db: None,
+                is_drc: None,
+                xtags: None,
+            },
+            // High quality audio format
+            StreamingFormat {
+                itag: 140,
+                url: Some("https://example.com/audio.mp4".to_string()),
+                mime_type: "audio/mp4; codecs=\"mp4a.40.2\"".to_string(),
+                bitrate: 130904,
+                width: None,
+                height: None,
+                init_range: Some(Range {
+                    start: "0".to_string(),
+                    end: "722".to_string(),
+                }),
+                index_range: Some(Range {
+                    start: "723".to_string(),
+                    end: "1774".to_string(),
+                }),
+                last_modified: Some("1739026344625664".to_string()),
+                content_length: Some("13656269".to_string()),
+                quality: "tiny".to_string(),
+                fps: None,
+                quality_label: None,
+                projection_type: "RECTANGULAR".to_string(),
+                average_bitrate: Some(129479),
+                audio_quality: Some("AUDIO_QUALITY_MEDIUM".to_string()),
+                approx_duration_ms: "843766".to_string(),
+                audio_sample_rate: Some("44100".to_string()),
+                audio_channels: Some(2),
+                quality_ordinal: Some("QUALITY_ORDINAL_UNKNOWN".to_string()),
+                high_replication: Some(true),
+                color_info: None,
+                loudness_db: Some(-2.6200008),
+                is_drc: None,
+                xtags: None,
+            },
+        ],
+        server_abr_streaming_url: Some("https://example.com/streaming.mp4".to_string()),
     }
 }

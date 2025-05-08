@@ -6,7 +6,7 @@ use crate::cookie_jar_loader::CookieJarLoader;
 #[cfg(feature = "ci")]
 use crate::errors::CouldNotRetrieveTranscriptReason;
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
-use crate::models::{MicroformatData, VideoDetails};
+use crate::models::{MicroformatData, StreamingData, VideoDetails};
 use crate::proxies::ProxyConfig;
 #[cfg(not(feature = "ci"))]
 use crate::video_data_fetcher::VideoDataFetcher;
@@ -516,5 +516,85 @@ impl YouTubeTranscriptApi {
         video_id: &str,
     ) -> Result<MicroformatData, CouldNotRetrieveTranscript> {
         self.fetcher.fetch_microformat(video_id).await
+    }
+
+    /// Fetches streaming data for a YouTube video.
+    ///
+    /// This method retrieves information about available video and audio formats, including:
+    /// - URLs for different quality versions of the video
+    /// - Resolution, bitrate, and codec information
+    /// - Both combined formats (with audio and video) and separate adaptive formats
+    /// - Information about format expiration
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ")
+    ///
+    /// # Returns
+    ///
+    /// * `Result<StreamingData, CouldNotRetrieveTranscript>` - Streaming data or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if:
+    /// - The video does not exist or is private
+    /// - The video has geo-restrictions that prevent access
+    /// - Network issues prevent fetching the data
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Fetch streaming data about a video
+    /// let streaming = api.fetch_streaming_data("dQw4w9WgXcQ").await?;
+    ///
+    /// // Print information about formats
+    /// println!("Combined formats: {}", streaming.formats.len());
+    /// println!("Adaptive formats: {}", streaming.adaptive_formats.len());
+    ///
+    /// // Find the highest resolution video format
+    /// if let Some(best_video) = streaming.adaptive_formats.iter()
+    ///     .filter(|f| f.width.is_some() && f.height.is_some())
+    ///     .max_by_key(|f| f.height.unwrap_or(0)) {
+    ///     println!("Best video quality: {}p", best_video.height.unwrap());
+    ///     println!("Codec: {}", best_video.mime_type);
+    /// }
+    ///
+    /// // Find the best audio format
+    /// if let Some(best_audio) = streaming.adaptive_formats.iter()
+    ///     .filter(|f| f.audio_quality.is_some())
+    ///     .max_by_key(|f| f.bitrate) {
+    ///     println!("Best audio quality: {}", best_audio.audio_quality.as_ref().unwrap());
+    ///     println!("Bitrate: {} bps", best_audio.bitrate);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "ci")]
+    pub async fn fetch_streaming_data(
+        &self,
+        video_id: &str,
+    ) -> Result<StreamingData, CouldNotRetrieveTranscript> {
+        // For non-existent video ID, return an error
+        if video_id == crate::tests::test_utils::NON_EXISTENT_VIDEO_ID {
+            return Err(CouldNotRetrieveTranscript {
+                video_id: video_id.to_string(),
+                reason: Some(CouldNotRetrieveTranscriptReason::VideoUnavailable),
+            });
+        }
+
+        // Return mock data
+        Ok(crate::tests::mocks::create_mock_streaming_data())
+    }
+
+    #[cfg(not(feature = "ci"))]
+    pub async fn fetch_streaming_data(
+        &self,
+        video_id: &str,
+    ) -> Result<StreamingData, CouldNotRetrieveTranscript> {
+        self.fetcher.fetch_streaming_data(video_id).await
     }
 }

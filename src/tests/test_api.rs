@@ -342,3 +342,62 @@ async fn test_fetch_microformat() {
         }
     }
 }
+
+#[cfg(not(feature = "ci"))]
+#[tokio::test]
+async fn test_fetch_streaming_data() {
+    setup();
+    let api = create_api();
+
+    // Test fetching streaming data
+    let result = api.fetch_streaming_data(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    assert!(result.is_ok(), "Failed to fetch streaming data");
+
+    let streaming_data = result.unwrap();
+
+    // Verify that we have some basic data
+    assert!(!streaming_data.formats.is_empty(), "Formats list is empty");
+    assert!(
+        !streaming_data.adaptive_formats.is_empty(),
+        "Adaptive formats list is empty"
+    );
+    assert!(
+        !streaming_data.expires_in_seconds.is_empty(),
+        "Expiration time is empty"
+    );
+
+    // Check some format details
+    for format in &streaming_data.formats {
+        assert!(format.itag > 0, "Invalid itag value");
+        assert!(!format.mime_type.is_empty(), "MIME type is empty");
+        assert!(format.bitrate > 0, "Bitrate is zero or negative");
+        assert!(!format.approx_duration_ms.is_empty(), "Duration is empty");
+    }
+
+    // Check some adaptive format details
+    for format in &streaming_data.adaptive_formats {
+        assert!(format.itag > 0, "Invalid itag value");
+        assert!(!format.mime_type.is_empty(), "MIME type is empty");
+        assert!(format.bitrate > 0, "Bitrate is zero or negative");
+        assert!(!format.approx_duration_ms.is_empty(), "Duration is empty");
+
+        // Check for video-specific properties
+        if format.mime_type.starts_with("video/") {
+            assert!(format.width.is_some(), "Video width is missing");
+            assert!(format.height.is_some(), "Video height is missing");
+        }
+
+        // Check for audio-specific properties
+        if format.mime_type.starts_with("audio/") {
+            assert!(format.audio_quality.is_some(), "Audio quality is missing");
+        }
+    }
+}
