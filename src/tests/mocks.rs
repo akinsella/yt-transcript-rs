@@ -4,7 +4,10 @@ use std::collections::HashMap;
 use serde_json::json;
 
 use crate::fetched_transcript::FetchedTranscript;
-use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
+use crate::models::{
+    FetchedTranscriptSnippet, MicroformatData, MicroformatEmbed, MicroformatThumbnail,
+    TranslationLanguage, VideoThumbnail,
+};
 use crate::transcript::Transcript;
 use crate::transcript_list::TranscriptList;
 use crate::VideoDetails;
@@ -188,4 +191,55 @@ pub fn create_mock_client() -> Client {
     // In real implementation, we'd use a more sophisticated HTTP mocking library
     // For this example, we're keeping it simple
     Client::builder().user_agent("Mock Client").build().unwrap()
+}
+
+/// Creates mock microformat data for testing
+pub fn create_mock_microformat_data() -> MicroformatData {
+    let thumbnails = vec![VideoThumbnail {
+        url: "https://i.ytimg.com/vi/mock_video_id/maxresdefault.jpg".to_string(),
+        width: 1280,
+        height: 720,
+    }];
+
+    let thumbnail = MicroformatThumbnail {
+        thumbnails: Some(thumbnails),
+    };
+
+    let embed = MicroformatEmbed {
+        height: Some(720),
+        iframe_url: Some("https://www.youtube.com/embed/mock_video_id".to_string()),
+        width: Some(1280),
+    };
+
+    let available_countries = vec![
+        "US".to_string(),
+        "GB".to_string(),
+        "CA".to_string(),
+        "AU".to_string(),
+        "DE".to_string(),
+        "FR".to_string(),
+        "JP".to_string(),
+    ];
+
+    MicroformatData {
+        available_countries: Some(available_countries),
+        category: Some("Science & Technology".to_string()),
+        description: Some("This is a mock video description for testing.".to_string()),
+        embed: Some(embed),
+        external_channel_id: Some("UC_mock_channel_id".to_string()),
+        external_video_id: Some("mock_video_id".to_string()),
+        has_ypc_metadata: Some(false),
+        is_family_safe: Some(true),
+        is_shorts_eligible: Some(false),
+        is_unlisted: Some(false),
+        length_seconds: Some("300".to_string()),
+        like_count: Some("1000".to_string()),
+        owner_channel_name: Some("Mock Channel".to_string()),
+        owner_profile_url: Some("https://www.youtube.com/@MockChannel".to_string()),
+        publish_date: Some("2023-01-01T12:00:00Z".to_string()),
+        thumbnail: Some(thumbnail),
+        title: Some("Mock Video Title".to_string()),
+        upload_date: Some("2023-01-01T12:00:00Z".to_string()),
+        view_count: Some("10000".to_string()),
+    }
 }

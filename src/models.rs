@@ -202,3 +202,64 @@ pub struct VideoThumbnail {
     /// Height of the thumbnail in pixels
     pub height: u32,
 }
+
+/// Represents microformat data for a YouTube video
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct MicroformatData {
+    /// Countries where the video is available
+    pub available_countries: Option<Vec<String>>,
+    /// Category of the video
+    pub category: Option<String>,
+    /// Description of the video
+    pub description: Option<String>,
+    /// Embed information
+    pub embed: Option<MicroformatEmbed>,
+    /// External channel ID
+    pub external_channel_id: Option<String>,
+    /// External video ID
+    pub external_video_id: Option<String>,
+    /// Whether the video has YPC metadata
+    pub has_ypc_metadata: Option<bool>,
+    /// Whether the video is family safe
+    pub is_family_safe: Option<bool>,
+    /// Whether the video is eligible for Shorts
+    pub is_shorts_eligible: Option<bool>,
+    /// Whether the video is unlisted
+    pub is_unlisted: Option<bool>,
+    /// Duration of the video in seconds
+    pub length_seconds: Option<String>,
+    /// Number of likes
+    pub like_count: Option<String>,
+    /// Name of the channel owner
+    pub owner_channel_name: Option<String>,
+    /// URL to the owner's profile
+    pub owner_profile_url: Option<String>,
+    /// Date when the video was published
+    pub publish_date: Option<String>,
+    /// Thumbnail information
+    pub thumbnail: Option<MicroformatThumbnail>,
+    /// Title of the video
+    pub title: Option<String>,
+    /// Date when the video was uploaded
+    pub upload_date: Option<String>,
+    /// Number of views
+    pub view_count: Option<String>,
+}
+
+/// Represents embed information in microformat data
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct MicroformatEmbed {
+    /// Height of the embed
+    pub height: Option<i32>,
+    /// URL for the iframe embed
+    pub iframe_url: Option<String>,
+    /// Width of the embed
+    pub width: Option<i32>,
+}
+
+/// Represents thumbnail information in microformat data
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct MicroformatThumbnail {
+    /// List of thumbnails in different sizes
+    pub thumbnails: Option<Vec<VideoThumbnail>>,
+}

@@ -6,7 +6,7 @@ use crate::cookie_jar_loader::CookieJarLoader;
 #[cfg(feature = "ci")]
 use crate::errors::CouldNotRetrieveTranscriptReason;
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
-use crate::models::VideoDetails;
+use crate::models::{MicroformatData, VideoDetails};
 use crate::proxies::ProxyConfig;
 #[cfg(not(feature = "ci"))]
 use crate::video_data_fetcher::VideoDataFetcher;
@@ -441,5 +441,80 @@ impl YouTubeTranscriptApi {
         video_id: &str,
     ) -> Result<VideoDetails, CouldNotRetrieveTranscript> {
         self.fetcher.fetch_video_details(video_id).await
+    }
+
+    /// Fetches microformat data for a YouTube video.
+    ///
+    /// This method retrieves additional metadata about a video that's not included
+    /// in the main video details, such as available countries, category, and embed information.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ")
+    ///
+    /// # Returns
+    ///
+    /// * `Result<MicroformatData, CouldNotRetrieveTranscript>` - Microformat data or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return an error if:
+    /// - The video does not exist or is private
+    /// - Network issues prevent fetching the data
+    /// - The YouTube page structure has changed and data cannot be extracted
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    ///
+    /// // Fetch microformat data about a video
+    /// let microformat = api.fetch_microformat("dQw4w9WgXcQ").await?;
+    ///
+    /// // Check if the video is unlisted
+    /// if let Some(is_unlisted) = microformat.is_unlisted {
+    ///     println!("Video is unlisted: {}", is_unlisted);
+    /// }
+    ///
+    /// // Get video category
+    /// if let Some(category) = microformat.category {
+    ///     println!("Video category: {}", category);
+    /// }
+    ///
+    /// // Check availability by country
+    /// if let Some(countries) = microformat.available_countries {
+    ///     println!("Video available in {} countries", countries.len());
+    ///     if countries.contains(&"US".to_string()) {
+    ///         println!("Video is available in the United States");
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "ci")]
+    pub async fn fetch_microformat(
+        &self,
+        video_id: &str,
+    ) -> Result<MicroformatData, CouldNotRetrieveTranscript> {
+        // For non-existent video ID, return an error
+        if video_id == crate::tests::test_utils::NON_EXISTENT_VIDEO_ID {
+            return Err(CouldNotRetrieveTranscript {
+                video_id: video_id.to_string(),
+                reason: Some(CouldNotRetrieveTranscriptReason::VideoUnavailable),
+            });
+        }
+
+        // Return mock data
+        Ok(crate::tests::mocks::create_mock_microformat_data())
+    }
+
+    #[cfg(not(feature = "ci"))]
+    pub async fn fetch_microformat(
+        &self,
+        video_id: &str,
+    ) -> Result<MicroformatData, CouldNotRetrieveTranscript> {
+        self.fetcher.fetch_microformat(video_id).await
     }
 }

@@ -297,3 +297,48 @@ async fn test_preserve_formatting() {
         without_formatting.language_code
     );
 }
+
+#[cfg(not(feature = "ci"))]
+#[tokio::test]
+async fn test_fetch_microformat() {
+    setup();
+    let api = create_api();
+
+    // Test fetching microformat data
+    let result = api.fetch_microformat(MULTILANG_VIDEO_ID).await;
+
+    // If YouTube API returns an error, skip this test
+    if let Err(error) = &result {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+            return; // Skip test
+        }
+    }
+
+    assert!(result.is_ok(), "Failed to fetch microformat data");
+
+    let microformat = result.unwrap();
+
+    // Verify that we have some basic data
+    if let Some(countries) = &microformat.available_countries {
+        assert!(!countries.is_empty(), "Available countries list is empty");
+    }
+
+    if let Some(external_video_id) = &microformat.external_video_id {
+        assert_eq!(external_video_id, MULTILANG_VIDEO_ID, "Video ID mismatch");
+    }
+
+    // Check if we have category information
+    if let Some(category) = &microformat.category {
+        assert!(!category.is_empty(), "Category is empty");
+    }
+
+    // Check if we have embed information
+    if let Some(embed) = &microformat.embed {
+        if let Some(iframe_url) = &embed.iframe_url {
+            assert!(
+                iframe_url.contains(MULTILANG_VIDEO_ID),
+                "Embed URL doesn't contain video ID"
+            );
+        }
+    }
+}

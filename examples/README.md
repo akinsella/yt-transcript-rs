@@ -154,4 +154,21 @@ This example demonstrates how to fetch detailed information about a YouTube vide
 3. Content information (keywords, description) 
 4. Thumbnails (URLs and dimensions)
 
-The video details functionality allows you to extract rich metadata from YouTube videos without needing to parse the webpage manually. This can be useful for building applications that need to display video information alongside transcripts. 
+The video details functionality allows you to extract rich metadata from YouTube videos without needing to parse the webpage manually. This can be useful for building applications that need to display video information alongside transcripts.
+
+### Fetching Microformat Data
+
+```bash
+cargo run --example youtube_microformat_data
+```
+
+This example demonstrates how to fetch microformat data from a YouTube video using the API. Microformat data contains additional metadata that complements the standard video details, including:
+
+1. Available countries where the video can be viewed
+2. Category information
+3. Embed details (iframe URL and dimensions)
+4. Video status flags (family safe, unlisted, shorts eligibility)
+5. Publication and upload dates
+6. Like count and other engagement metrics
+
+Microformat data is useful for understanding content restrictions, embedding videos, and gathering more comprehensive metadata about YouTube videos. 

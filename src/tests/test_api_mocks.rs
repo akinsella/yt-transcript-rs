@@ -59,3 +59,45 @@ async fn test_find_transcript() {
 }
 
 // Implement the other tests similarly...
+
+#[cfg(feature = "ci")]
+#[tokio::test]
+async fn test_fetch_microformat() {
+    setup();
+    let api = create_api();
+
+    // Fetch microformat data
+    let microformat = api.fetch_microformat(MULTILANG_VIDEO_ID).await;
+
+    assert!(microformat.is_ok(), "Failed to fetch microformat data");
+    let microformat = microformat.unwrap();
+
+    // Verify the mock data
+    // Check for available countries
+    if let Some(countries) = microformat.available_countries {
+        assert!(!countries.is_empty(), "Available countries list is empty");
+    } else {
+        panic!("Available countries is None");
+    }
+
+    // Check for category
+    if let Some(category) = microformat.category {
+        assert_eq!(
+            category, "Science & Technology",
+            "Category doesn't match mock data"
+        );
+    } else {
+        panic!("Category is None");
+    }
+
+    // Check for family safe flag
+    if let Some(is_family_safe) = microformat.is_family_safe {
+        assert!(is_family_safe, "Family safe flag doesn't match mock data");
+    } else {
+        panic!("Family safe flag is None");
+    }
+
+    // Test non-existent video
+    let result = api.fetch_microformat(NON_EXISTENT_VIDEO_ID).await;
+    assert!(result.is_err(), "Successfully fetched non-existent video");
+}

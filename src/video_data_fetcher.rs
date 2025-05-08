@@ -2,7 +2,8 @@ use reqwest::Client;
 
 use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::js_var_parser::JsVarParser;
-use crate::models::VideoDetails;
+use crate::microformat_extractor::MicroformatExtractor;
+use crate::models::{MicroformatData, VideoDetails};
 use crate::playability_asserter::PlayabilityAsserter;
 use crate::proxies::ProxyConfig;
 use crate::transcript_list::TranscriptList;
@@ -198,6 +199,62 @@ impl VideoDataFetcher {
 
         // Extract video details from player response
         VideoDetailsExtractor::extract_video_details(&player_response, video_id)
+    }
+
+    /// Fetches microformat data for a YouTube video.
+    ///
+    /// This method retrieves additional metadata about a video, including:
+    /// - Available countries
+    /// - Category
+    /// - Embed information
+    /// - Information about whether the video is unlisted, family-safe, etc.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID
+    ///
+    /// # Returns
+    ///
+    /// * `Result<MicroformatData, CouldNotRetrieveTranscript>` - Microformat data on success, or an error
+    ///
+    /// # Errors
+    ///
+    /// This method can fail if:
+    /// - The video doesn't exist or is private
+    /// - YouTube's HTML structure has changed and parsing fails
+    /// - Network errors occur during the request
+    ///
+    /// # Example (internal usage)
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let video_id = "dQw4w9WgXcQ";
+    ///
+    /// // This internally calls VideoDataFetcher::fetch_microformat
+    /// let microformat = api.fetch_microformat(video_id).await?;
+    ///
+    /// if let Some(category) = &microformat.category {
+    ///     println!("Video category: {}", category);
+    /// }
+    ///
+    /// if let Some(countries) = &microformat.available_countries {
+    ///     println!("Available in {} countries", countries.len());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn fetch_microformat(
+        &self,
+        video_id: &str,
+    ) -> Result<MicroformatData, CouldNotRetrieveTranscript> {
+        // Fetch the HTML and extract player response
+        let html = self.page_fetcher.fetch_video_page(video_id).await?;
+        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
+
+        // Extract microformat data from player response
+        MicroformatExtractor::extract_microformat_data(&player_response, video_id)
     }
 
     /// Extracts the ytInitialPlayerResponse JavaScript variable from YouTube's HTML.
