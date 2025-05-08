@@ -550,7 +550,87 @@ cargo fmt
 
 # Format and overwrite files with the formatting changes
 cargo fmt --all
-```
+
+### Setting up cargo-husky for Git Hooks
+
+Follow these steps to ensure cargo-husky is properly installed and configured:
+
+1. **Install cargo-husky as a dev dependency**:
+
+   ```bash
+   cargo add --dev cargo-husky
+   ```
+
+2. **Configure cargo-husky in Cargo.toml**:
+
+   Add the following to your `Cargo.toml` file:
+
+   ```toml
+   [dev-dependencies]
+   cargo-husky = { version = "1", features = ["precommit-hook", "run-cargo-fmt", "run-cargo-clippy", "run-cargo-check"] }
+   ```
+
+3. **Verify the installation**:
+
+   After adding cargo-husky, run `cargo build` once to ensure the git hooks are installed:
+
+   ```bash
+   cargo build
+   ```
+
+4. **Verify the hooks were created**:
+
+   Check if the pre-commit hook file was created:
+
+   ```bash
+   ls -la .git/hooks/pre-commit
+   ```
+
+   You should see a pre-commit file, and it should be executable.
+
+5. **Test the pre-commit hook**:
+
+   Make a small change to any file, then try to commit it:
+
+   ```bash
+   # Make a change
+   echo "// Test comment" >> src/lib.rs
+   
+   # Add the change
+   git add src/lib.rs
+   
+   # Try to commit
+   git commit -m "Test commit"
+   ```
+
+   If the hook is working correctly, it should run:
+   - `cargo fmt` to format the code
+   - `cargo check` to verify compilation
+   - `cargo clippy` to check for lints
+
+6. **Troubleshooting**:
+
+   If the hooks aren't running:
+   
+   - Make sure the hook file is executable: `chmod +x .git/hooks/pre-commit`
+   - Try rebuilding the project: `cargo clean && cargo build`
+   - Check the content of the pre-commit file to ensure it's correct
+
+7. **Customizing hook behavior**:
+
+   You can customize the hook behavior by adding a `.cargo-husky/hooks/pre-commit` file with your custom script. cargo-husky will use this file instead of generating its own.
+
+8. **Skipping hooks when needed**:
+
+   In rare cases when you need to bypass the hooks, you can use:
+
+   ```bash
+   git commit -m "Your message" --no-verify
+   ```
+   
+   However, this should be used sparingly and only in exceptional circumstances.
+
+By following these steps, cargo-husky will enforce code quality standards on every commit, helping maintain a clean and consistent codebase.
 
 ## Acknowledgments
 

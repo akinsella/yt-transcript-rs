@@ -33,8 +33,10 @@ chrono = { version = "0.4.41", features = ["serde"] }
 regex = "1.11.1"
 roxmltree = "0.20.0"
 html-escape = "0.2.13"
+cargo-husky = { version = "1.5.0", features = ["precommit-hook", "run-cargo-fmt", "run-cargo-clippy", "run-cargo-check"] }
 
 [dev-dependencies]
+cargo-husky = "1.5.0"
 # Testing dependencies
 mockito = "1.7.0"
 
