@@ -3,11 +3,11 @@ use std::collections::HashMap;
 
 use serde_json::json;
 
-use crate::VideoDetails;
 use crate::fetched_transcript::FetchedTranscript;
 use crate::models::{FetchedTranscriptSnippet, TranslationLanguage};
 use crate::transcript::Transcript;
 use crate::transcript_list::TranscriptList;
+use crate::VideoDetails;
 
 // Mock video IDs that match the ones used in tests
 pub const MOCK_MULTILANG_VIDEO_ID: &str = "arj7oStGLkU";

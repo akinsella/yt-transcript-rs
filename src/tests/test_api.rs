@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use super::test_utils::{MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID, create_api, setup};
+use super::test_utils::{create_api, setup, MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID};
 
 #[allow(unused_imports)]
 use crate::errors::CouldNotRetrieveTranscriptReason;

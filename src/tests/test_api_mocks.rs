@@ -3,7 +3,7 @@ use super::mocks::{
     create_mock_fetched_transcript, create_mock_transcript_list, mock_youtube_player_response,
 };
 #[allow(unused_imports)]
-use super::test_utils::{MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID, create_api, setup};
+use super::test_utils::{create_api, setup, MULTILANG_VIDEO_ID, NON_EXISTENT_VIDEO_ID};
 
 // #[cfg(feature = "ci")]
 #[tokio::test]

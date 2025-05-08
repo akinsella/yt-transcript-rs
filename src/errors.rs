@@ -1,5 +1,5 @@
-use crate::TranscriptList;
 use crate::proxies::{GenericProxyConfig, ProxyConfig, WebshareProxyConfig};
+use crate::TranscriptList;
 use thiserror::Error;
 
 /// # YouTubeTranscriptApiError
