@@ -530,7 +530,7 @@ Contributions are welcome! Here's how you can contribute:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/yt-transcript-rs.git
+git clone https://github.com/akinsella/yt-transcript-rs.git
 cd yt-transcript-rs
 
 # Build the project
