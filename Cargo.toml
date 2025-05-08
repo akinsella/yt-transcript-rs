@@ -1,6 +1,6 @@
 [package]
 name = "yt-transcript-rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Alexis Kinsella <akinsella@users.noreply.github.com>"]
 description = "A Rust library for fetching and working with YouTube video transcripts"
 license = "MIT"
