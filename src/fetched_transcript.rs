@@ -42,7 +42,8 @@ use crate::models::FetchedTranscriptSnippet;
 /// let transcript = transcript_list.find_transcript(&["en"])?;
 ///
 /// // Fetch the actual transcript content
-/// let fetched = transcript.fetch(false).await?;
+/// let client = reqwest::Client::new();
+/// let fetched = transcript.fetch(&client, false).await?;
 ///
 /// // Access the full text
 /// println!("Full transcript: {}", fetched.text());
@@ -100,7 +101,8 @@ impl FetchedTranscript {
     /// # let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// # let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// # let transcript = transcript_list.find_transcript(&["en"])?;
-    /// # let fetched = transcript.fetch(false).await?;
+    /// # let client = reqwest::Client::new();
+    /// # let fetched = transcript.fetch(&client, false).await?;
     /// // Convert to raw data (array of objects)
     /// let raw_data = fetched.to_raw_data();
     ///
@@ -151,8 +153,8 @@ impl FetchedTranscript {
     /// # let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// # let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// # let transcript = transcript_list.find_transcript(&["en"])?;
-    /// let fetched = transcript.fetch(false).await?;
-    ///
+    /// # let client = reqwest::Client::new();
+    /// # let fetched = transcript.fetch(&client, false).await?;
     /// // Get the full text as a single string
     /// let full_text = fetched.text();
     /// println!("Transcript: {}", full_text);
@@ -184,8 +186,8 @@ impl FetchedTranscript {
     /// # let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// # let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// # let transcript = transcript_list.find_transcript(&["en"])?;
-    /// let fetched = transcript.fetch(false).await?;
-    ///
+    /// # let client = reqwest::Client::new();
+    /// # let fetched = transcript.fetch(&client, false).await?;
     /// // Access individual segments
     /// for segment in fetched.parts() {
     ///     // Find segments mentioning a specific word
@@ -243,8 +245,8 @@ impl FetchedTranscript {
     /// # let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// # let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// # let transcript = transcript_list.find_transcript(&["en"])?;
-    /// let fetched = transcript.fetch(false).await?;
-    ///
+    /// # let client = reqwest::Client::new();
+    /// # let fetched = transcript.fetch(&client, false).await?;
     /// println!("Video duration: {:.2} seconds", fetched.duration());
     /// # Ok(())
     /// # }

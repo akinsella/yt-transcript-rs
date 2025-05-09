@@ -1,4 +1,4 @@
-use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -43,7 +43,7 @@ use crate::transcript::Transcript;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TranscriptList {
     /// The YouTube video ID this transcript list belongs to
     pub video_id: String,
@@ -94,7 +94,6 @@ impl TranscriptList {
     ///
     /// # Parameters
     ///
-    /// * `client` - HTTP client for making requests
     /// * `video_id` - The YouTube video ID
     /// * `video_page_html` - JSON data extracted from YouTube's page containing caption information
     ///
@@ -106,7 +105,32 @@ impl TranscriptList {
     ///
     /// Returns an error if the caption data cannot be properly parsed.
     pub fn build(
-        client: Client,
+        video_id: String,
+        video_page_html: &serde_json::Value,
+    ) -> Result<Self, CouldNotRetrieveTranscript> {
+        let transcript_list = Self::build_without_client(video_id, video_page_html)?;
+
+        Ok(transcript_list)
+    }
+
+    /// Creates a TranscriptList from YouTube's caption JSON data without requiring a client.
+    ///
+    /// This method is similar to `build` but doesn't take a client parameter, making it
+    /// suitable for use in serialization/deserialization contexts.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID
+    /// * `video_page_html` - JSON data extracted from YouTube's page containing caption information
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, CouldNotRetrieveTranscript>` - A transcript list or an error
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the caption data cannot be properly parsed.
+    pub fn build_without_client(
         video_id: String,
         video_page_html: &serde_json::Value,
     ) -> Result<Self, CouldNotRetrieveTranscript> {
@@ -177,7 +201,6 @@ impl TranscriptList {
             };
 
             let transcript = Transcript::new(
-                client.clone(),
                 video_id.clone(),
                 base_url,
                 name,

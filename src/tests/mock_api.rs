@@ -48,7 +48,7 @@ fn create_mock_transcript() -> FetchedTranscript {
 // Create mock transcript list
 #[allow(dead_code)]
 fn create_mock_transcript_list() -> TranscriptList {
-    let client = create_client();
+    let _client = create_client();
 
     let translation_languages = vec![
         TranslationLanguage {
@@ -63,7 +63,6 @@ fn create_mock_transcript_list() -> TranscriptList {
 
     let mut manually_created_transcripts = HashMap::new();
     let english_transcript = Transcript::new(
-        client.clone(),
         MOCK_VIDEO_ID.to_string(),
         "https://mock.youtube.com/transcript/en".to_string(),
         "English".to_string(),

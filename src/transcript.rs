@@ -38,21 +38,20 @@ use crate::transcript_parser::TranscriptParser;
 ///     let spanish = transcript.translate("es")?;
 ///     
 ///     // Fetch the translated content
-///     let fetched = spanish.fetch(false).await?;
+///     let client = reqwest::Client::new();
+///     let fetched = spanish.fetch(&client, false).await?;
 ///     println!("Spanish transcript: {}", fetched.text());
 /// }
 ///
 /// // Or fetch the original transcript
-/// let fetched = transcript.fetch(false).await?;
+/// let client = reqwest::Client::new();
+/// let fetched = transcript.fetch(&client, false).await?;
 /// println!("Original transcript: {}", fetched.text());
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Transcript {
-    /// HTTP client for making requests to YouTube
-    pub client: Client,
-
     /// The YouTube video ID this transcript belongs to
     pub video_id: String,
 
@@ -83,7 +82,6 @@ impl Transcript {
     ///
     /// # Parameters
     ///
-    /// * `client` - HTTP client for making requests to YouTube
     /// * `video_id` - YouTube video ID
     /// * `url` - URL to fetch the transcript content
     /// * `language` - Human-readable language name (e.g., "English")
@@ -102,11 +100,8 @@ impl Transcript {
     /// # use yt_transcript_rs::transcript::Transcript;
     /// # use yt_transcript_rs::models::TranslationLanguage;
     /// # fn example() {
-    /// let client = Client::new();
-    ///
     /// // Create a transcript for English
     /// let transcript = Transcript::new(
-    ///     client,
     ///     "dQw4w9WgXcQ".to_string(),
     ///     "https://www.youtube.com/api/timedtext?...".to_string(),
     ///     "English".to_string(),
@@ -122,7 +117,6 @@ impl Transcript {
     /// # }
     /// ```
     pub fn new(
-        client: Client,
         video_id: String,
         url: String,
         language: String,
@@ -136,7 +130,6 @@ impl Transcript {
             .collect();
 
         Self {
-            client,
             video_id,
             url,
             language,
@@ -154,6 +147,7 @@ impl Transcript {
     ///
     /// # Parameters
     ///
+    /// * `client` - HTTP client for making requests to YouTube
     /// * `preserve_formatting` - Whether to preserve HTML formatting in the transcript
     ///   (e.g., bold, italic, etc.)
     ///
@@ -171,17 +165,19 @@ impl Transcript {
     /// # Example
     ///
     /// ```rust,no_run
+    /// # use reqwest::Client;
     /// # use yt_transcript_rs::YouTubeTranscriptApi;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::new();
     /// let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// let transcript = transcript_list.find_transcript(&["en"])?;
     ///
     /// // Fetch without preserving formatting
-    /// let plain_transcript = transcript.fetch(false).await?;
+    /// let plain_transcript = transcript.fetch(&client, false).await?;
     ///
     /// // Fetch and preserve HTML formatting like <b>bold</b> text
-    /// let formatted_transcript = transcript.fetch(true).await?;
+    /// let formatted_transcript = transcript.fetch(&client, true).await?;
     ///
     /// // Access the full text
     /// println!("Transcript: {}", plain_transcript.text());
@@ -195,10 +191,11 @@ impl Transcript {
     /// ```
     pub async fn fetch(
         &self,
+        client: &Client,
         preserve_formatting: bool,
     ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
         let response =
-            self.client
+            client
                 .get(&self.url)
                 .send()
                 .await
@@ -288,7 +285,7 @@ impl Transcript {
     ///
     /// # Parameters
     ///
-    /// * `language_code` - The language code to translate to (e.g., "es" for Spanish)
+    /// * `language_code` - The target language code to translate to (e.g., "es", "fr", "de")
     ///
     /// # Returns
     ///
@@ -304,24 +301,22 @@ impl Transcript {
     /// # Example
     ///
     /// ```rust,no_run
+    /// # use reqwest::Client;
     /// # use yt_transcript_rs::YouTubeTranscriptApi;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::new();
     /// let api = YouTubeTranscriptApi::new(None, None, None)?;
     /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
     /// let transcript = transcript_list.find_transcript(&["en"])?;
     ///
     /// // Create Spanish translation
     /// if transcript.is_translatable() {
-    ///     let spanish = transcript.translate("es")?;
+    ///     // Translate to Spanish
+    ///     let spanish_transcript = transcript.translate("es")?;
     ///     
-    ///     // Now fetch the Spanish translation
-    ///     let spanish_content = spanish.fetch(false).await?;
-    ///     println!("Spanish: {}", spanish_content.text());
-    ///     
-    ///     // Create Japanese translation
-    ///     let japanese = transcript.translate("ja")?;
-    ///     let japanese_content = japanese.fetch(false).await?;
-    ///     println!("Japanese: {}", japanese_content.text());
+    ///     // Fetch the translated content
+    ///     let spanish_content = spanish_transcript.fetch(&client, false).await?;
+    ///     println!("Spanish translation: {}", spanish_content.text());
     /// }
     /// # Ok(())
     /// # }
@@ -330,36 +325,94 @@ impl Transcript {
         if !self.is_translatable() {
             return Err(CouldNotRetrieveTranscript {
                 video_id: self.video_id.clone(),
-                reason: Some(CouldNotRetrieveTranscriptReason::NotTranslatable),
+                reason: Some(CouldNotRetrieveTranscriptReason::TranslationUnavailable(
+                    "This transcript cannot be translated".to_string(),
+                )),
             });
         }
 
         if !self.translation_languages_map.contains_key(language_code) {
+            let available_langs = self
+                .translation_languages
+                .iter()
+                .map(|l| format!("{} ({})", l.language, l.language_code))
+                .collect::<Vec<_>>()
+                .join(", ");
+
             return Err(CouldNotRetrieveTranscript {
                 video_id: self.video_id.clone(),
-                reason: Some(CouldNotRetrieveTranscriptReason::TranslationLanguageNotAvailable),
+                reason: Some(
+                    CouldNotRetrieveTranscriptReason::TranslationLanguageUnavailable(format!(
+                        "Translation to '{}' is not available. Available languages: {}",
+                        language_code, available_langs
+                    )),
+                ),
             });
         }
 
         let language = self
             .translation_languages_map
             .get(language_code)
-            .unwrap()
-            .clone();
-        let url = format!("{}&tlang={}", self.url, language_code);
+            .cloned()
+            .unwrap();
 
-        Ok(Transcript::new(
-            self.client.clone(),
-            self.video_id.clone(),
-            url,
+        let translated_url = format!("{}&tlang={}", self.url, language_code);
+
+        Ok(Self {
+            video_id: self.video_id.clone(),
+            url: translated_url,
             language,
-            language_code.to_string(),
-            true,
-            vec![],
-        ))
+            language_code: language_code.to_string(),
+            is_generated: self.is_generated,
+            translation_languages: self.translation_languages.clone(),
+            translation_languages_map: self.translation_languages_map.clone(),
+        })
     }
 
-    /// Returns the full human-readable language name of this transcript.
+    /// Translates this transcript and fetches the result in a single operation.
+    ///
+    /// This convenience method combines the `translate` and `fetch` operations.
+    ///
+    /// # Parameters
+    ///
+    /// * `client` - HTTP client for making requests to YouTube
+    /// * `language_code` - The target language code to translate to
+    /// * `preserve_formatting` - Whether to preserve HTML formatting
+    ///
+    /// # Returns
+    ///
+    /// * `Result<FetchedTranscript, CouldNotRetrieveTranscript>` - The fetched translated transcript or an error
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use reqwest::Client;
+    /// # use yt_transcript_rs::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::new();
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    /// let transcript = transcript_list.find_transcript(&["en"])?;
+    ///
+    /// if transcript.is_translatable() {
+    ///     // Translate to Spanish and fetch in one step
+    ///     let spanish_content = transcript.translate_and_fetch(&client, "es", false).await?;
+    ///     println!("Spanish translation: {}", spanish_content.text());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn translate_and_fetch(
+        &self,
+        client: &Client,
+        language_code: &str,
+        preserve_formatting: bool,
+    ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
+        let translated = self.translate(language_code)?;
+        translated.fetch(client, preserve_formatting).await
+    }
+
+    /// Returns the human-readable language name of this transcript.
     ///
     /// # Returns
     ///

@@ -1,12 +1,15 @@
 use anyhow::Result;
+use reqwest::Client;
 use yt_transcript_rs::api::YouTubeTranscriptApi;
 
 /// This example demonstrates how to fetch all information about a YouTube video in a single request.
+/// It also shows how to serialize and deserialize the VideoInfos struct for storage or transmission.
 ///
 /// It shows:
 /// 1. Creating a YouTubeTranscriptApi instance
 /// 2. Fetching all video information at once using fetch_video_infos
-/// 3. Displaying comprehensive information from different data categories:
+/// 3. Serializing the data to JSON and deserializing it back
+/// 4. Displaying comprehensive information from different data categories:
 ///    - Video details (title, author, etc.)
 ///    - Microformat data (category, countries, etc.)
 ///    - Streaming data (available formats)
@@ -171,7 +174,74 @@ async fn main() -> Result<()> {
             }
 
             println!("\n✨ All data retrieved in a single request!");
-            println!("Try this example with different video IDs to see more information.");
+
+            // ----- SERIALIZATION EXAMPLE -----
+            println!("\n💾 Serialization and Deserialization:");
+            println!("--------------------------------");
+
+            // Serialize to JSON
+            println!("Serializing VideoInfos to JSON...");
+            let serialized = serde_json::to_string(&infos).expect("Failed to serialize");
+            println!("Serialized data size: {} bytes", serialized.len());
+
+            // Deserialize back
+            println!("Deserializing back to VideoInfos...");
+            let deserialized =
+                serde_json::from_str::<yt_transcript_rs::models::VideoInfos>(&serialized)
+                    .expect("Failed to deserialize");
+
+            // Verify the data is intact
+            println!("Verifying data integrity:");
+            println!(
+                "  - Title match: {}",
+                infos.video_details.title == deserialized.video_details.title
+            );
+            println!(
+                "  - Format count match: {}",
+                infos.streaming_data.formats.len() == deserialized.streaming_data.formats.len()
+            );
+            println!(
+                "  - Transcript count match: {}",
+                transcript_count == deserialized.transcript_list.transcripts().count()
+            );
+
+            // Demonstrate fetching a transcript from the deserialized data
+            println!("\nFetching a transcript from the deserialized data...");
+            if transcript_count > 0 {
+                let transcript = deserialized.transcript_list.find_transcript(&["en", "es"]);
+                if let Ok(transcript) = transcript {
+                    println!("Found {} transcript", transcript.language());
+
+                    // Create a client to fetch the transcript
+                    let client = Client::new();
+                    let fetched = transcript.fetch(&client, false).await;
+
+                    if let Ok(fetched) = fetched {
+                        let snippet_count = fetched.parts().len();
+                        println!(
+                            "Successfully fetched transcript with {} text segments",
+                            snippet_count
+                        );
+
+                        // Show a small sample of the transcript
+                        println!("Sample transcript content:");
+                        for (i, part) in fetched.parts().iter().take(3).enumerate() {
+                            println!(
+                                "  [{}] {:.1}s: {}",
+                                i + 1,
+                                part.start,
+                                &part.text[..part.text.len().min(50)]
+                            );
+                        }
+                    } else {
+                        println!("Failed to fetch transcript: {:?}", fetched.err());
+                    }
+                } else {
+                    println!("No English or Spanish transcript found");
+                }
+            }
+
+            println!("\nTry this example with different video IDs to see more information.");
         }
         Err(e) => {
             println!("Failed to fetch video information: {:?}", e);

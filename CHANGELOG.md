@@ -4,6 +4,28 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.5] - 2025-05-10
+
+### Added
+- Full serialization/deserialization support for all data structures
+- Added `serde` derive macros to all relevant models
+- New convenience method `translate_and_fetch` to translate and fetch in one operation
+- Enhanced `build_without_client` method in `TranscriptList` for serialization support
+- Updated example `youtube_video_infos.rs` to demonstrate serialization features
+
+### Changed
+- Externalized HTTP client from `Transcript` struct to make it serializable
+- Modified `fetch` method to accept a client parameter instead of storing it
+- Updated `translate` method to preserve translation languages
+- Improved error handling with detailed error variants for translation
+- Removed redundant client parameter from `TranscriptList::build`
+- Cleaned up and simplified internals for better maintainability
+
+### Documentation
+- Updated main README.md with serialization/deserialization example
+- Added section about serialization in examples README.md
+- Improved method documentation to reflect changes in client handling
+
 ## [0.1.4] - 2025-05-09
 
 ### Added
@@ -112,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced complex look-ahead regex patterns
 - Fixed various warnings and unused imports/variables
 
+[0.1.5]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.5
 [0.1.4]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.4
 [0.1.3]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.3
 [0.1.2]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.2

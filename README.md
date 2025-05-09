@@ -24,6 +24,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
 - [Advanced Usage](#advanced-usage)
   - [Using Proxies](#using-proxies)
   - [Using Cookie Authentication](#using-cookie-authentication)
+  - [Serializing and Deserializing Video Information](#serializing-and-deserializing-video-information)
 - [Error Handling](#error-handling)
 - [License](#license)
 - [Contributing](#contributing)
@@ -538,6 +539,58 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+### Serializing and Deserializing Video Information
+
+You can serialize video information for storage or transmission between systems. The library provides full support for `serde` serialization and deserialization of the `VideoInfos` struct and related types.
+
+```rust
+use anyhow::Result;
+use reqwest::Client;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+use yt_transcript_rs::models::VideoInfos;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Initialize the YouTubeTranscriptApi
+    let api = YouTubeTranscriptApi::new(None, None, None)?;
+
+    // Fetch video information
+    let video_id = "dQw4w9WgXcQ";
+    let infos = api.fetch_video_infos(video_id).await?;
+    
+    // Serialize to JSON
+    let json = serde_json::to_string(&infos)?;
+    println!("Serialized data size: {} bytes", json.len());
+    
+    // Save to file, send over network, etc.
+    std::fs::write("video_info.json", &json)?;
+    
+    // Later, deserialize back from JSON
+    let json = std::fs::read_to_string("video_info.json")?;
+    let deserialized = serde_json::from_str::<VideoInfos>(&json)?;
+    
+    // The deserialized object has all the same data
+    println!("Title: {}", deserialized.video_details.title);
+    
+    // To fetch a transcript from the deserialized data, you need to provide a client
+    let client = Client::new();
+    if let Ok(transcript) = deserialized.transcript_list.find_transcript(&["en"]) {
+        let fetched = transcript.fetch(&client, false).await?;
+        println!("Transcript text: {}", fetched.text());
+    }
+    
+    Ok(())
+}
+```
+
+The serialization support makes it easy to:
+- Cache video information to reduce YouTube API requests
+- Send video data between microservices
+- Store video information in databases
+- Create backup systems for important videos
+
+Note that when deserializing a `Transcript`, you'll need to provide a `Client` when calling `fetch()`, as HTTP clients cannot be serialized.
 
 ## Error Handling
 

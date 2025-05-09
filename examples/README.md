@@ -205,4 +205,10 @@ The example shows how to access:
 3. Streaming data (available formats, resolutions, codecs, etc.)
 4. Transcript information (available languages, translation options, etc.)
 
-This all-in-one approach is ideal for applications that need comprehensive video information with optimal performance. It reduces network overhead and provides a complete picture of a video's metadata in a single operation. 
+Additionally, the example demonstrates how to:
+
+5. Serialize the complete `VideoInfos` struct to JSON
+6. Deserialize it back into a fully functional object
+7. Use the deserialized data to access transcripts
+
+This all-in-one approach is ideal for applications that need comprehensive video information with optimal performance. It reduces network overhead and provides a complete picture of a video's metadata in a single operation. The serialization support enables caching video information, sending it between systems, or storing it in databases. 

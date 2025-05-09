@@ -121,11 +121,11 @@ pub enum CouldNotRetrieveTranscriptReason {
     /// YouTube is blocking your request (rate limiting, etc.)
     RequestBlocked(Option<Box<dyn ProxyConfig>>),
 
-    /// The requested transcript cannot be translated
-    NotTranslatable,
+    /// The requested transcript cannot be translated with specific error details
+    TranslationUnavailable(String),
 
-    /// The requested translation language is not available
-    TranslationLanguageNotAvailable,
+    /// The requested translation language is not available with specific error details
+    TranslationLanguageUnavailable(String),
 
     /// Failed to create a consent cookie required by YouTube
     FailedToCreateConsentCookie,
@@ -200,24 +200,24 @@ impl CouldNotRetrieveTranscript {
                                 format!("{}\n\nYouTube is blocking your requests, despite you using Webshare proxies. Please make sure that you have purchased \"Residential\" proxies and NOT \"Proxy Server\" or \"Static Residential\", as those won't work as reliably! The free tier also uses \"Proxy Server\" and will NOT work!\n\nThe only reliable option is using \"Residential\" proxies (not \"Static Residential\"), as this allows you to rotate through a pool of over 30M IPs, which means you will always find an IP that hasn't been blocked by YouTube yet!", base_cause)
                             },
                             Some(config) if config.as_any().is::<GenericProxyConfig>() => {
-                                format!("{}\n\nYouTube is blocking your requests, despite you using proxies. Keep in mind a proxy is just a way to hide your real IP behind the IP of that proxy, but there is no guarantee that the IP of that proxy won't be blocked as well.\n\nThe only truly reliable way to prevent IP blocks is rotating through a large pool of residential IPs.", base_cause)
+                                format!("{}\n\nYouTube is blocking your requests, despite you using proxies. Keep in mind a proxy is just a way to hide your real IP behind the IP of that proxy, but there is no guarantee that the IP of that proxy won't be blocked as well.\n\nThe only truly reliable way to prevent IP blocks is rotating through a large pool of residential IPs, by using a provider like Webshare.", base_cause)
                             },
                             _ => {
                                 format!("{}\n\nRequest blocked.", base_cause)
                             }
                         }
                     },
-                    CouldNotRetrieveTranscriptReason::NotTranslatable => {
-                        "The requested language is not translatable".to_string()
+                    CouldNotRetrieveTranscriptReason::TranslationUnavailable(message) => {
+                        format!("The requested transcript cannot be translated: {}", message)
                     },
-                    CouldNotRetrieveTranscriptReason::TranslationLanguageNotAvailable => {
-                        "The requested translation language is not available".to_string()
+                    CouldNotRetrieveTranscriptReason::TranslationLanguageUnavailable(message) => {
+                        format!("The requested translation language is not available: {}", message)
                     },
                     CouldNotRetrieveTranscriptReason::FailedToCreateConsentCookie => {
                         "Failed to automatically give consent to saving cookies".to_string()
                     },
-                    CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(reason) => {
-                        format!("Request to YouTube failed: {}", reason)
+                    CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(error) => {
+                        format!("Failed to make a request to YouTube. Error: {}", error)
                     },
                     CouldNotRetrieveTranscriptReason::InvalidVideoId => {
                         "You provided an invalid video id. Make sure you are using the video id and NOT the url!`".to_string()
@@ -227,7 +227,7 @@ impl CouldNotRetrieveTranscript {
                     },
                     CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable => {
                         "The data required to fetch the transcript is not parsable. This should not happen, please open an issue (make sure to include the video ID)!".to_string()
-                    }
+                    },
                 };
 
                 format!("{} This is most likely caused by:\n\n{}", base_error, cause)

@@ -17,7 +17,7 @@ pub const MOCK_MULTILANG_VIDEO_ID: &str = "arj7oStGLkU";
 pub const MOCK_NON_EXISTENT_VIDEO_ID: &str = "xxxxxxxxxxx";
 
 // Create mock transcript data
-pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
+pub fn create_mock_transcript_list(_client: Client) -> TranscriptList {
     let video_id = MOCK_MULTILANG_VIDEO_ID.to_string();
 
     // Create translation languages
@@ -39,7 +39,6 @@ pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
     // Create manually created transcripts
     let mut manually_created_transcripts = HashMap::new();
     let english_transcript = Transcript::new(
-        client.clone(),
         video_id.clone(),
         "https://mock.url/en".to_string(),
         "English".to_string(),
@@ -52,7 +51,6 @@ pub fn create_mock_transcript_list(client: Client) -> TranscriptList {
     // Create generated transcripts
     let mut generated_transcripts = HashMap::new();
     let spanish_transcript = Transcript::new(
-        client.clone(),
         video_id.clone(),
         "https://mock.url/es".to_string(),
         "Spanish".to_string(),

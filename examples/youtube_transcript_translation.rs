@@ -1,4 +1,5 @@
 use anyhow::Result;
+use reqwest::Client;
 use yt_transcript_rs::api::YouTubeTranscriptApi;
 
 /// This example demonstrates how to translate a YouTube transcript to a different language.
@@ -53,13 +54,16 @@ async fn main() -> Result<()> {
                             target_language
                         );
 
+                        // Create a client for fetching the transcript
+                        let client = Client::new();
+
                         // Step 3: Translate the transcript
                         match transcript.translate(target_language) {
                             Ok(translated_transcript) => {
                                 println!("Successfully created translated transcript object");
 
                                 // Step 4: Fetch the translated transcript content
-                                match translated_transcript.fetch(false).await {
+                                match translated_transcript.fetch(&client, false).await {
                                     Ok(fetched_transcript) => {
                                         println!("Successfully fetched translated transcript!");
                                         println!(

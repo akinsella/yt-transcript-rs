@@ -33,7 +33,7 @@ use crate::youtube_page_fetcher::YoutubePageFetcher;
 /// - `VideoDetailsExtractor`: Extracts detailed information from video data
 pub struct VideoDataFetcher {
     /// HTTP client for making requests
-    client: Client,
+    pub client: Client,
     /// Specialized fetcher for YouTube pages
     page_fetcher: YoutubePageFetcher,
 }
@@ -129,7 +129,7 @@ impl VideoDataFetcher {
         // Extract captions data and build transcript list
         let video_captions = CaptionsExtractor::extract_captions_data(&player_response, video_id)?;
 
-        TranscriptList::build(self.client.clone(), video_id.to_string(), &video_captions)
+        TranscriptList::build(video_id.to_string(), &video_captions)
     }
 
     /// Fetches detailed information about a YouTube video.
@@ -357,8 +357,7 @@ impl VideoDataFetcher {
 
         // Extract captions data and build transcript list
         let captions_data = CaptionsExtractor::extract_captions_data(&player_response, video_id)?;
-        let transcript_list =
-            TranscriptList::build(self.client.clone(), video_id.to_string(), &captions_data)?;
+        let transcript_list = TranscriptList::build(video_id.to_string(), &captions_data)?;
 
         // Combine all data into the VideoInfos struct
         Ok(VideoInfos {

@@ -3,9 +3,10 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::cookie_jar_loader::CookieJarLoader;
-#[cfg(feature = "ci")]
-use crate::errors::CouldNotRetrieveTranscriptReason;
+#[cfg(not(feature = "ci"))]
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
+#[cfg(feature = "ci")]
+use crate::errors::{CookieError, CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::models::{MicroformatData, StreamingData, VideoDetails, VideoInfos};
 use crate::proxies::ProxyConfig;
 #[cfg(not(feature = "ci"))]
@@ -296,15 +297,26 @@ impl YouTubeTranscriptApi {
         languages: &[&str],
         preserve_formatting: bool,
     ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
+        // First list all available transcripts
         let transcript_list = self.list_transcripts(video_id).await?;
+
+        // Then find the best matching transcript based on language preferences
         let transcript = transcript_list.find_transcript(languages)?;
-        transcript.fetch(preserve_formatting).await
+
+        // Use the client from the fetcher
+        let client = &self.fetcher.client;
+
+        // Finally fetch the actual transcript content
+        transcript.fetch(client, preserve_formatting).await
     }
 
     /// Lists all available transcripts for a YouTube video.
     ///
-    /// This method retrieves information about all available transcripts for a video,
-    /// including both manual and automatically generated captions in all languages.
+    /// This method retrieves a list of all available transcripts/captions for a video,
+    /// categorized by:
+    /// - Language
+    /// - Whether they were manually created or automatically generated
+    /// - Whether they support translation to other languages
     ///
     /// # Parameters
     ///
@@ -317,27 +329,31 @@ impl YouTubeTranscriptApi {
     /// # Errors
     ///
     /// This method will return an error if:
-    /// - The video does not exist or is private
-    /// - The video has no transcripts available
-    /// - Network issues prevent fetching the transcript list
+    /// - The video ID is invalid
+    /// - The video doesn't exist or is private
+    /// - YouTube is blocking your requests
+    /// - Network errors occur
+    /// - No transcripts are available for the video
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust,no_run
     /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let video_id = "dQw4w9WgXcQ";
     ///
-    /// // Get all available transcripts
-    /// let transcript_list = api.list_transcripts("dQw4w9WgXcQ").await?;
+    /// let transcript_list = api.list_transcripts(video_id).await?;
     ///
-    /// // Print information about each available transcript
-    /// for transcript in transcript_list.transcripts() {
-    ///     println!("Language: {} ({}) - {} generated",
-    ///         transcript.language(),
-    ///         transcript.language_code(),
-    ///         if transcript.is_generated() { "Auto" } else { "Manually" });
-    /// }
+    /// // Print available transcripts
+    /// println!("{}", transcript_list);
+    ///
+    /// // Count manually created vs. generated transcripts
+    /// println!(
+    ///     "{} manual, {} auto-generated transcripts available",
+    ///     transcript_list.manually_created_transcripts.len(),
+    ///     transcript_list.generated_transcripts.len()
+    /// );
     /// # Ok(())
     /// # }
     /// ```

@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// println!("Language: {} ({})", english.language, english.language_code);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct TranslationLanguage {
     /// The human-readable language name (e.g., "English", "Español", "Français")
     pub language: String,
@@ -362,6 +362,7 @@ pub struct StreamingData {
 ///
 /// The advantage of using this struct is that it retrieves all information in a single request
 /// to YouTube, rather than making multiple separate requests.
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct VideoInfos {
     /// Basic details about the video (title, author, view count, etc.)
     pub video_details: VideoDetails,
