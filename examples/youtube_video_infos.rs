@@ -124,12 +124,11 @@ async fn main() -> Result<()> {
             println!("-----------------");
 
             let transcript_list = &infos.transcript_list;
-            let transcripts = transcript_list.transcripts().collect::<Vec<_>>();
-            let transcript_count = transcripts.len();
+            let transcript_count = transcript_list.transcripts().count();
             println!("Available transcripts: {}", transcript_count);
 
             // Print information about each transcript
-            for (i, transcript) in transcripts.iter().enumerate() {
+            for (i, transcript) in transcript_list.transcripts().enumerate().take(5) {
                 let translatable = if transcript.is_translatable() {
                     "✓"
                 } else {

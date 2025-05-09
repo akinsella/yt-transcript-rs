@@ -336,7 +336,7 @@ impl VideoDataFetcher {
     ///
     /// println!("Title: {}", infos.video_details.title);
     /// println!("Category: {}", infos.microformat.category.unwrap_or_default());
-    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().len());
+    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().count());
     /// # Ok(())
     /// # }
     /// ```

@@ -644,7 +644,7 @@ impl YouTubeTranscriptApi {
     /// }
     ///
     /// println!("Available formats: {}", infos.streaming_data.formats.len());
-    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().len());
+    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().count());
     /// # Ok(())
     /// # }
     /// ```
