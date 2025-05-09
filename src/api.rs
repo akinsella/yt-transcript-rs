@@ -6,7 +6,7 @@ use crate::cookie_jar_loader::CookieJarLoader;
 #[cfg(feature = "ci")]
 use crate::errors::CouldNotRetrieveTranscriptReason;
 use crate::errors::{CookieError, CouldNotRetrieveTranscript};
-use crate::models::{MicroformatData, StreamingData, VideoDetails};
+use crate::models::{MicroformatData, StreamingData, VideoDetails, VideoInfos};
 use crate::proxies::ProxyConfig;
 #[cfg(not(feature = "ci"))]
 use crate::video_data_fetcher::VideoDataFetcher;
@@ -596,5 +596,77 @@ impl YouTubeTranscriptApi {
         video_id: &str,
     ) -> Result<StreamingData, CouldNotRetrieveTranscript> {
         self.fetcher.fetch_streaming_data(video_id).await
+    }
+
+    /// Fetches all available information about a YouTube video in a single request.
+    ///
+    /// This method retrieves comprehensive information about a video in one network call, including:
+    /// - Video details (title, author, etc.)
+    /// - Microformat data (category, available countries, etc.)
+    /// - Streaming data (available formats, qualities, etc.)
+    /// - Transcript list (available caption languages)
+    ///
+    /// This is more efficient than calling individual methods separately when multiple
+    /// types of information are needed, as it avoids multiple HTTP requests.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID (e.g., "dQw4w9WgXcQ")
+    ///
+    /// # Returns
+    ///
+    /// * `Result<VideoInfos, CouldNotRetrieveTranscript>` - Combined video information on success, or an error
+    ///
+    /// # Errors
+    ///
+    /// This method will return a `CouldNotRetrieveTranscript` error if:
+    /// - The video doesn't exist or is private
+    /// - The video has geo-restrictions that prevent access
+    /// - Network errors occur during the request
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let video_id = "dQw4w9WgXcQ";
+    ///
+    /// // Fetch all information in a single request
+    /// let infos = api.fetch_video_infos(video_id).await?;
+    ///
+    /// // Access combined information
+    /// println!("Title: {}", infos.video_details.title);
+    /// println!("Author: {}", infos.video_details.author);
+    ///
+    /// if let Some(category) = &infos.microformat.category {
+    ///     println!("Category: {}", category);
+    /// }
+    ///
+    /// println!("Available formats: {}", infos.streaming_data.formats.len());
+    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(not(feature = "ci"))]
+    pub async fn fetch_video_infos(
+        &self,
+        video_id: &str,
+    ) -> Result<VideoInfos, CouldNotRetrieveTranscript> {
+        self.fetcher.fetch_video_infos(video_id).await
+    }
+
+    /// Fetches all available information about a YouTube video in a single request.
+    ///
+    /// This is a CI-mode placeholder that always returns an error.
+    #[cfg(feature = "ci")]
+    pub async fn fetch_video_infos(
+        &self,
+        video_id: &str,
+    ) -> Result<VideoInfos, CouldNotRetrieveTranscript> {
+        Err(CouldNotRetrieveTranscript {
+            video_id: video_id.to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::VideoUnavailable),
+        })
     }
 }

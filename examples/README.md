@@ -188,4 +188,21 @@ This example demonstrates how to fetch streaming data from a YouTube video using
 5. Technical specifications (initialization ranges, color information)
 6. Audio characteristics (sample rate, channels, quality levels)
 
-This functionality is useful for applications that need to access or analyze YouTube's media streams, understand available quality options, or implement custom video players with advanced format selection capabilities. 
+This functionality is useful for applications that need to access or analyze YouTube's media streams, understand available quality options, or implement custom video players with advanced format selection capabilities.
+
+### Fetching All Video Information at Once
+
+```bash
+cargo run --example youtube_video_infos
+```
+
+This example demonstrates how to fetch all information about a YouTube video in a single request using the `fetch_video_infos` function. This approach is more efficient as it avoids multiple network requests when you need different types of information about a video.
+
+The example shows how to access:
+
+1. Video details (title, author, view count, description, etc.)
+2. Microformat data (category, available countries, family safe status, etc.)
+3. Streaming data (available formats, resolutions, codecs, etc.)
+4. Transcript information (available languages, translation options, etc.)
+
+This all-in-one approach is ideal for applications that need comprehensive video information with optimal performance. It reduces network overhead and provides a complete picture of a video's metadata in a single operation. 

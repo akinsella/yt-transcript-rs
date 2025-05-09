@@ -1,3 +1,4 @@
+use crate::transcript_list::TranscriptList;
 use serde::{Deserialize, Serialize};
 
 /// # TranslationLanguage
@@ -350,4 +351,27 @@ pub struct StreamingData {
     pub adaptive_formats: Vec<StreamingFormat>,
     /// Server ABR streaming URL
     pub server_abr_streaming_url: Option<String>,
+}
+
+/// # VideoInfos
+///
+/// Comprehensive container for all available information about a YouTube video.
+///
+/// This struct combines metadata from different extractors into a single structure,
+/// providing a complete view of a video's details, streaming options, and available transcripts.
+///
+/// The advantage of using this struct is that it retrieves all information in a single request
+/// to YouTube, rather than making multiple separate requests.
+pub struct VideoInfos {
+    /// Basic details about the video (title, author, view count, etc.)
+    pub video_details: VideoDetails,
+
+    /// Extended metadata from the microformat section (categories, countries, embed info)
+    pub microformat: MicroformatData,
+
+    /// Information about available streaming formats (qualities, codecs, URLs)
+    pub streaming_data: StreamingData,
+
+    /// List of available transcripts/captions for the video
+    pub transcript_list: TranscriptList,
 }

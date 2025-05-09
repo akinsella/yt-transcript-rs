@@ -1,9 +1,10 @@
 use reqwest::Client;
 
-use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
+use crate::captions_extractor::CaptionsExtractor;
+use crate::errors::CouldNotRetrieveTranscript;
 use crate::js_var_parser::JsVarParser;
 use crate::microformat_extractor::MicroformatExtractor;
-use crate::models::{MicroformatData, StreamingData, VideoDetails};
+use crate::models::{MicroformatData, StreamingData, VideoDetails, VideoInfos};
 use crate::playability_asserter::PlayabilityAsserter;
 use crate::proxies::ProxyConfig;
 use crate::streaming_data_extractor::StreamingDataExtractor;
@@ -122,33 +123,13 @@ impl VideoDataFetcher {
         &self,
         video_id: &str,
     ) -> Result<TranscriptList, CouldNotRetrieveTranscript> {
-        let video_captions = self.fetch_video_captions(video_id).await?;
+        // Get player response with playability check
+        let player_response = self.fetch_player_response(video_id, true).await?;
+
+        // Extract captions data and build transcript list
+        let video_captions = CaptionsExtractor::extract_captions_data(&player_response, video_id)?;
 
         TranscriptList::build(self.client.clone(), video_id.to_string(), &video_captions)
-    }
-
-    /// Fetches the captions JSON data from YouTube.
-    ///
-    /// This is an internal method that:
-    /// 1. Retrieves the HTML for the video page
-    /// 2. Extracts the captions JSON data from the page
-    ///
-    /// # Parameters
-    ///
-    /// * `video_id` - The YouTube video ID
-    ///
-    /// # Returns
-    ///
-    /// * `Result<serde_json::Value, CouldNotRetrieveTranscript>` - The captions JSON data or an error
-    pub async fn fetch_video_captions(
-        &self,
-        video_id: &str,
-    ) -> Result<serde_json::Value, CouldNotRetrieveTranscript> {
-        // Fetch the video HTML using the page fetcher
-        let html = self.page_fetcher.fetch_video_page(video_id).await?;
-
-        // Extract captions JSON
-        self.extract_captions_json(&html, video_id)
     }
 
     /// Fetches detailed information about a YouTube video.
@@ -194,9 +175,8 @@ impl VideoDataFetcher {
         &self,
         video_id: &str,
     ) -> Result<VideoDetails, CouldNotRetrieveTranscript> {
-        // Fetch the HTML and extract player response
-        let html = self.page_fetcher.fetch_video_page(video_id).await?;
-        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
+        // Get player response with playability check
+        let player_response = self.fetch_player_response(video_id, true).await?;
 
         // Extract video details from player response
         VideoDetailsExtractor::extract_video_details(&player_response, video_id)
@@ -250,9 +230,8 @@ impl VideoDataFetcher {
         &self,
         video_id: &str,
     ) -> Result<MicroformatData, CouldNotRetrieveTranscript> {
-        // Fetch the HTML and extract player response
-        let html = self.page_fetcher.fetch_video_page(video_id).await?;
-        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
+        // Get player response with playability check
+        let player_response = self.fetch_player_response(video_id, true).await?;
 
         // Extract microformat data from player response
         MicroformatExtractor::extract_microformat_data(&player_response, video_id)
@@ -311,15 +290,83 @@ impl VideoDataFetcher {
         &self,
         video_id: &str,
     ) -> Result<StreamingData, CouldNotRetrieveTranscript> {
-        // Fetch the HTML and extract player response
-        let html = self.page_fetcher.fetch_video_page(video_id).await?;
-        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
-
-        // Check playability status
-        PlayabilityAsserter::assert_playability(&player_response, video_id)?;
+        // Get player response with playability check
+        let player_response = self.fetch_player_response(video_id, true).await?;
 
         // Extract streaming data from player response
         StreamingDataExtractor::extract_streaming_data(&player_response, video_id)
+    }
+
+    /// Fetches all available information about a YouTube video in a single request.
+    ///
+    /// This method retrieves the video page once and extracts all data, including:
+    /// - Video details (title, author, etc.)
+    /// - Microformat data (category, available countries, etc.)
+    /// - Streaming data (available formats, qualities, etc.)
+    /// - Transcript list (available caption languages)
+    ///
+    /// This is more efficient than calling the individual fetch methods separately
+    /// when multiple types of information are needed, as it avoids multiple HTTP requests.
+    ///
+    /// # Parameters
+    ///
+    /// * `video_id` - The YouTube video ID
+    ///
+    /// # Returns
+    ///
+    /// * `Result<VideoInfos, CouldNotRetrieveTranscript>` - Combined video information on success, or an error
+    ///
+    /// # Errors
+    ///
+    /// This method can fail if:
+    /// - The video doesn't exist or is private
+    /// - YouTube's HTML structure has changed and parsing fails
+    /// - Network errors occur during the request
+    ///
+    /// # Example (internal usage)
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::api::YouTubeTranscriptApi;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let api = YouTubeTranscriptApi::new(None, None, None)?;
+    /// let video_id = "dQw4w9WgXcQ";
+    ///
+    /// // This internally calls VideoDataFetcher::fetch_video_infos
+    /// let infos = api.fetch_video_infos(video_id).await?;
+    ///
+    /// println!("Title: {}", infos.video_details.title);
+    /// println!("Category: {}", infos.microformat.category.unwrap_or_default());
+    /// println!("Available transcripts: {}", infos.transcript_list.transcripts().len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn fetch_video_infos(
+        &self,
+        video_id: &str,
+    ) -> Result<VideoInfos, CouldNotRetrieveTranscript> {
+        // Get player response with playability check (single network request)
+        let player_response = self.fetch_player_response(video_id, true).await?;
+
+        // Extract all data in parallel using the various extractors
+        let video_details =
+            VideoDetailsExtractor::extract_video_details(&player_response, video_id)?;
+        let microformat =
+            MicroformatExtractor::extract_microformat_data(&player_response, video_id)?;
+        let streaming_data =
+            StreamingDataExtractor::extract_streaming_data(&player_response, video_id)?;
+
+        // Extract captions data and build transcript list
+        let captions_data = CaptionsExtractor::extract_captions_data(&player_response, video_id)?;
+        let transcript_list =
+            TranscriptList::build(self.client.clone(), video_id.to_string(), &captions_data)?;
+
+        // Combine all data into the VideoInfos struct
+        Ok(VideoInfos {
+            video_details,
+            microformat,
+            streaming_data,
+            transcript_list,
+        })
     }
 
     /// Extracts the ytInitialPlayerResponse JavaScript variable from YouTube's HTML.
@@ -345,56 +392,35 @@ impl VideoDataFetcher {
         Ok(player_response)
     }
 
-    /// Extracts the captions JSON data from YouTube's HTML.
+    /// Helper method that fetches a video page and extracts the player response.
     ///
-    /// This method:
-    /// 1. Extracts the ytInitialPlayerResponse variable
-    /// 2. Verifies the video is playable
-    /// 3. Extracts the captions data from the player response
+    /// This private method centralizes the common functionality used across multiple
+    /// data fetching methods, eliminating code duplication.
     ///
     /// # Parameters
     ///
-    /// * `html` - The HTML content of the YouTube video page
-    /// * `video_id` - The YouTube video ID (used for error reporting)
+    /// * `video_id` - The YouTube video ID
+    /// * `check_playability` - Whether to verify the video is playable
     ///
     /// # Returns
     ///
-    /// * `Result<serde_json::Value, CouldNotRetrieveTranscript>` - The captions JSON data or an error
-    ///
-    /// # Errors
-    ///
-    /// This method will return a specific error if:
-    /// - Transcripts are disabled for the video
-    /// - The video is unavailable or restricted
-    fn extract_captions_json(
+    /// * `Result<serde_json::Value, CouldNotRetrieveTranscript>` - The player response JSON or an error
+    async fn fetch_player_response(
         &self,
-        html: &str,
         video_id: &str,
+        check_playability: bool,
     ) -> Result<serde_json::Value, CouldNotRetrieveTranscript> {
-        let player_response = self.extract_yt_initial_player_response(html, video_id)?;
+        // Fetch the video page HTML only once
+        let html = self.page_fetcher.fetch_video_page(video_id).await?;
 
-        // Check playability status using the PlayabilityAsserter
-        PlayabilityAsserter::assert_playability(&player_response, video_id)?;
+        // Extract the player response
+        let player_response = self.extract_yt_initial_player_response(&html, video_id)?;
 
-        // Extract captions from player response
-        let captions_json = match player_response.get("captions") {
-            Some(captions) => match captions.get("playerCaptionsTracklistRenderer") {
-                Some(renderer) => renderer.clone(),
-                None => {
-                    return Err(CouldNotRetrieveTranscript {
-                        video_id: video_id.to_string(),
-                        reason: Some(CouldNotRetrieveTranscriptReason::TranscriptsDisabled),
-                    });
-                }
-            },
-            None => {
-                return Err(CouldNotRetrieveTranscript {
-                    video_id: video_id.to_string(),
-                    reason: Some(CouldNotRetrieveTranscriptReason::TranscriptsDisabled),
-                });
-            }
-        };
+        // Check playability status if requested
+        if check_playability {
+            PlayabilityAsserter::assert_playability(&player_response, video_id)?;
+        }
 
-        Ok(captions_json)
+        Ok(player_response)
     }
 }

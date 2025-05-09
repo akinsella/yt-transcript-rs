@@ -101,6 +101,7 @@
 //! ```
 
 pub mod api;
+pub mod captions_extractor;
 pub mod cookie_jar_loader;
 pub mod errors;
 pub mod fetched_transcript;
@@ -127,9 +128,11 @@ pub use errors::{
     VideoUnplayable, YouTubeDataUnparsable, YouTubeRequestFailed, YouTubeTranscriptApiError,
 };
 
+pub use captions_extractor::CaptionsExtractor;
 pub use fetched_transcript::FetchedTranscript;
 pub use models::FetchedTranscriptSnippet;
 pub use models::VideoDetails;
+pub use models::VideoInfos;
 pub use models::VideoThumbnail;
 pub use models::{ColorInfo, Range, StreamingData, StreamingFormat};
 pub use models::{MicroformatData, MicroformatEmbed, MicroformatThumbnail};

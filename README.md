@@ -19,6 +19,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
   - [Fetch video details](#fetch-video-details)
   - [Fetch microformat data](#fetch-microformat-data)
   - [Fetch streaming data](#fetch-streaming-data)
+  - [Fetch all video information at once](#fetch-all-video-information-at-once)
 - [Requirements](#requirements)
 - [Advanced Usage](#advanced-usage)
   - [Using Proxies](#using-proxies)
@@ -36,6 +37,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
 - Get detailed information about YouTube videos
 - Access video microformat data including available countries and embed information
 - Retrieve streaming formats and quality options for videos
+- Fetch all video information in a single request for optimal performance
 - Support for proxy configuration and cookie authentication
 
 ## Installation
@@ -399,6 +401,70 @@ async fn main() -> Result<()> {
         }
         Err(e) => {
             println!("Failed to fetch streaming data: {:?}", e);
+        }
+    }
+
+    Ok(())
+}
+```
+
+### Fetch all video information at once
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::api::YouTubeTranscriptApi;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("YouTube Video Infos (All-in-One) Example");
+    println!("----------------------------------------");
+
+    // Initialize the YouTubeTranscriptApi
+    let api = YouTubeTranscriptApi::new(None, None, None)?;
+
+    // Ted Talk video ID
+    let video_id = "arj7oStGLkU";
+
+    println!("Fetching all video information in a single request...");
+
+    match api.fetch_video_infos(video_id).await {
+        Ok(infos) => {
+            // Access video details
+            println!("\nVideo Details:");
+            println!("Title: {}", infos.video_details.title);
+            println!("Author: {}", infos.video_details.author);
+            println!("Length: {} seconds", infos.video_details.length_seconds);
+            
+            // Access microformat data
+            if let Some(category) = &infos.microformat.category {
+                println!("Category: {}", category);
+            }
+            
+            if let Some(countries) = &infos.microformat.available_countries {
+                println!("Available in {} countries", countries.len());
+            }
+            
+            // Access streaming data
+            println!("\nStreaming Options:");
+            println!("Video formats: {}", infos.streaming_data.formats.len());
+            println!("Adaptive formats: {}", infos.streaming_data.adaptive_formats.len());
+            
+            // Find highest resolution
+            let highest_res = infos.streaming_data.adaptive_formats
+                .iter()
+                .filter_map(|f| f.height)
+                .max()
+                .unwrap_or(0);
+            println!("Highest resolution: {}p", highest_res);
+            
+            // Access transcript information
+            let transcript_count = infos.transcript_list.transcripts().count();
+            println!("\nAvailable transcripts: {}", transcript_count);
+            
+            println!("\nAll data retrieved in a single network request!");
+        }
+        Err(e) => {
+            println!("Failed to fetch video information: {:?}", e);
         }
     }
 

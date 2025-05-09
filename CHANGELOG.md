@@ -4,6 +4,29 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.4] - 2025-05-09
+
+### Added
+- New `fetch_video_infos` method to retrieve all video information in a single request
+- `VideoInfos` model for representing comprehensive video data
+- Helper method in `VideoDataFetcher` to fetch player response data with reduced code duplication
+- Support for optimized data retrieval combining:
+  - Video details (title, author, etc.)
+  - Microformat data (category, available countries, etc.)
+  - Streaming data (available formats, qualities, etc.)
+  - Transcript list (available captions)
+- New example `youtube_video_infos.rs` demonstrating the all-in-one retrieval approach
+
+### Documentation
+- Updated main README.md with all-in-one data retrieval information
+- Added fetch_video_infos example to examples README.md
+- Added detailed documentation for the new VideoInfos struct and related methods
+
+### Changed
+- Refactored common code in VideoDataFetcher to eliminate duplication
+- Improved error handling for combined data retrieval
+- Enhanced code structure for better maintainability
+
 ## [0.1.3] - 2025-05-08
 
 ### Added
@@ -89,6 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced complex look-ahead regex patterns
 - Fixed various warnings and unused imports/variables
 
+[0.1.4]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.4
 [0.1.3]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.3
 [0.1.2]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.2
 [0.1.1]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.1
