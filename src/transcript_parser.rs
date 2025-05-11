@@ -1,6 +1,6 @@
 use crate::models::FetchedTranscriptSnippet;
 use anyhow::Result;
-use html2text;
+use html_escape::decode_html_entities;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 use regex::Regex;
@@ -56,8 +56,8 @@ struct Text {
 ///
 /// let snippets = parser.parse(xml).unwrap();
 /// ```
-#[derive(Debug)]
 /// Parser for YouTube transcript XML data
+#[derive(Debug)]
 pub struct TranscriptParser {
     /// Whether to preserve specified formatting tags in the transcript
     preserve_formatting: bool,
@@ -165,7 +165,9 @@ impl TranscriptParser {
     /// ```
     pub fn parse(&self, raw_data: &str) -> Result<Vec<FetchedTranscriptSnippet>, anyhow::Error> {
         let mut reader = Reader::from_reader(Cursor::new(raw_data));
-        reader.config_mut().trim_text(true);
+
+        // Don't trim text to preserve original spacing
+        reader.config_mut().trim_text(false);
 
         let mut buf = Vec::new();
 
@@ -234,23 +236,8 @@ impl TranscriptParser {
                             // When preserving formatting, keep HTML tags based on allowed list
                             self.process_with_formatting(&content)
                         } else {
-                            // When removing formatting, use html2text to properly convert to plain text
-                            // First, normalize HTML to ensure proper spacing around tags
-                            let normalized_content =
-                                self.normalize_html_for_text_extraction(&content);
-
-                            // html2text will handle both HTML tags and entities correctly
-                            // Use a very large width value (usize::MAX) to effectively disable line wrapping
-                            let plain_text =
-                                html2text::from_read(normalized_content.as_bytes(), usize::MAX)
-                                    .unwrap_or_else(|_| content.clone());
-
-                            // Convert reference-style links to inline links
-                            let processed_text =
-                                self.convert_reference_links_to_inline(&plain_text);
-
-                            // Trim trailing newlines
-                            processed_text.trim_end().to_string()
+                            // When removing formatting, use our entity-preserving HTML processor
+                            self.html_to_plain_text(&content)
                         };
 
                         // Create and add the snippet
@@ -283,6 +270,78 @@ impl TranscriptParser {
         }
 
         Ok(snippets)
+    }
+
+    /// Converts HTML to plain text while properly handling entities and spacing.
+    /// This is a simplified alternative to using the html2text crate.
+    fn html_to_plain_text(&self, html: &str) -> String {
+        // Split the HTML into textual content and tags
+        let mut result = String::new();
+        let mut in_tag = false;
+        let mut current_tag = String::new();
+        let mut is_link_tag = false;
+        let mut link_url = String::new();
+        let mut link_text = String::new();
+
+        // Simple but effective HTML parsing
+        for c in html.chars() {
+            if c == '<' {
+                in_tag = true;
+                current_tag.clear();
+                current_tag.push(c);
+            } else if in_tag && c == '>' {
+                in_tag = false;
+                current_tag.push(c);
+
+                // Process completed tag
+                if current_tag.starts_with("<a ") {
+                    // Found link opening tag
+                    is_link_tag = true;
+                    link_text.clear();
+
+                    // Extract URL from the tag
+                    if let Some(href_pos) = current_tag.find("href=") {
+                        let after_href = &current_tag[href_pos + 5..];
+                        let quote_char = if after_href.starts_with('"') {
+                            '"'
+                        } else {
+                            '\''
+                        };
+                        if let Some(start_pos) = after_href.find(quote_char) {
+                            if let Some(end_pos) = after_href[start_pos + 1..].find(quote_char) {
+                                link_url =
+                                    after_href[start_pos + 1..start_pos + 1 + end_pos].to_string();
+                            }
+                        }
+                    }
+                } else if current_tag == "</a>" {
+                    // Found link closing tag
+                    is_link_tag = false;
+
+                    // Format as "text (url)" without adding extra spaces
+                    result.push_str(&format!("{} ({})", link_text.trim(), link_url));
+                }
+                // No automatic space additions
+            } else if in_tag {
+                current_tag.push(c);
+            } else if is_link_tag {
+                // Inside link text
+                link_text.push(c);
+            } else {
+                // Normal text
+                result.push(c);
+            }
+        }
+
+        // Use html-escape to properly decode all HTML entities
+        let decoded_result = decode_html_entities(&result).to_string();
+
+        // Clean up multiple spaces
+        let space_regex = Regex::new(r"\s{2,}").unwrap();
+        let clean_result = space_regex.replace_all(&decoded_result, " ");
+
+        // Final trimming
+        clean_result.trim().to_string()
     }
 
     /// Processes text to preserve only specific allowed HTML formatting tags.
@@ -366,74 +425,6 @@ impl TranscriptParser {
 
         result
     }
-
-    /// Normalizes HTML content to ensure proper spacing when converted to plain text.
-    /// This adds spaces around HTML tags to prevent words from running together after tags are removed.
-    fn normalize_html_for_text_extraction(&self, html: &str) -> String {
-        // Add spaces before and after tags to prevent words from running together when tags are removed
-        let opening_tag_regex = Regex::new(r"<[^/][^>]*>").unwrap();
-        let closing_tag_regex = Regex::new(r"</[^>]*>").unwrap();
-
-        let with_spaces_before = opening_tag_regex.replace_all(html, " $0 ");
-        let with_spaces_after = closing_tag_regex.replace_all(&with_spaces_before, " $0 ");
-
-        // Remove extra spaces that might have been introduced
-        let multiple_spaces_regex = Regex::new(r"\s{2,}").unwrap();
-        multiple_spaces_regex
-            .replace_all(&with_spaces_after, " ")
-            .to_string()
-    }
-
-    /// Converts reference-style links from html2text output to inline links with parentheses.
-    /// For example, changes "[ link ][1]" with "[1]: https://example.com" to "link (https://example.com)".
-    fn convert_reference_links_to_inline(&self, text: &str) -> String {
-        // First, collect all reference URLs
-        let reference_regex = Regex::new(r"\[(\d+)\]:\s*(https?://[^\s]+)").unwrap();
-        let mut references = std::collections::HashMap::new();
-
-        for line in text.lines() {
-            if let Some(captures) = reference_regex.captures(line) {
-                if captures.len() >= 3 {
-                    let reference_num = captures.get(1).unwrap().as_str();
-                    let url = captures.get(2).unwrap().as_str();
-                    references.insert(reference_num.to_string(), url.to_string());
-                }
-            }
-        }
-
-        // If no references found, return the original text
-        if references.is_empty() {
-            return text.to_string();
-        }
-
-        // Replace reference-style links with inline links
-        let link_regex = Regex::new(r"\[\s*([^\]]+)\s*\]\[(\d+)\]").unwrap();
-        let lines: Vec<String> = text
-            .lines()
-            .filter(|line| !reference_regex.is_match(line))
-            .map(|line| {
-                let mut result = line.to_string();
-                while let Some(captures) = link_regex.captures(&result) {
-                    if captures.len() >= 3 {
-                        let link_text = captures.get(1).unwrap().as_str().trim();
-                        let reference_num = captures.get(2).unwrap().as_str();
-
-                        if let Some(url) = references.get(reference_num) {
-                            let replacement = format!("{} ({})", link_text, url);
-                            result = link_regex
-                                .replace(&result, replacement.as_str())
-                                .to_string();
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                result
-            })
-            .collect();
-
-        lines.join("\n")
-    }
 }
 
 #[cfg(test)]
@@ -479,18 +470,16 @@ mod tests {
         println!("Formatted 1: '{}'", formatted_snippets[1].text);
         println!("Formatted 2: '{}'", formatted_snippets[2].text);
 
-        // There might be a space between "in" and "<b>" depending on the implementation
-        let expected_text = formatted_snippets[0].text.clone();
-        assert!(
-            expected_text == "So in <b>college</b>," || expected_text == "So in<b>college</b>,",
-            "Actual: {}",
-            expected_text
+        // Exact assertions for formatting preserved mode
+        assert_eq!(formatted_snippets[0].text, "So in <b>college</b>,");
+        assert_eq!(
+            formatted_snippets[1].text,
+            "I was a <i>government</i> major,"
         );
-
-        assert!(formatted_snippets[1].text.contains("<i>government</i>"));
-        assert!(formatted_snippets[2].text.contains("<b>I had to write</b>"));
-        assert!(formatted_snippets[2].text.contains("<i>a lot</i>"));
-        assert!(formatted_snippets[2].text.contains("<b>papers</b>"));
+        assert_eq!(
+            formatted_snippets[2].text,
+            "which means <b>I had to write</b> <i>a lot</i> of <b>papers</b>."
+        );
 
         // Test with formatting removed
         let plain_parser = TranscriptParser::new(false);
@@ -501,25 +490,12 @@ mod tests {
         println!("Plain 1: '{}'", plain_snippets[1].text);
         println!("Plain 2: '{}'", plain_snippets[2].text);
 
-        // Check plain text output
-        assert!(
-            plain_snippets[0].text.contains("So in") && plain_snippets[0].text.contains("college"),
-            "Actual: {}",
-            plain_snippets[0].text
-        );
-        assert!(
-            plain_snippets[1].text.contains("I was a")
-                && plain_snippets[1].text.contains("government"),
-            "Actual: {}",
-            plain_snippets[1].text
-        );
-        assert!(
-            plain_snippets[2].text.contains("which means")
-                && plain_snippets[2].text.contains("I had to write")
-                && plain_snippets[2].text.contains("a lot")
-                && plain_snippets[2].text.contains("papers"),
-            "Actual: {}",
-            plain_snippets[2].text
+        // Exact assertions for plain text mode
+        assert_eq!(plain_snippets[0].text, "So in college,");
+        assert_eq!(plain_snippets[1].text, "I was a government major,");
+        assert_eq!(
+            plain_snippets[2].text,
+            "which means I had to write a lot of papers."
         );
     }
 
@@ -550,23 +526,19 @@ mod tests {
             formatted_with_attributes[2].text
         );
 
-        // There might be spacing differences depending on the implementation
-        let expected_text = formatted_with_attributes[0].text.clone();
-        assert!(
-            expected_text.contains("This has a")
-                && expected_text
-                    .contains("<span class=\"highlight\" style=\"color:red\">colored span</span>")
-                && expected_text.contains("with attributes"),
-            "Actual: {}",
-            expected_text
+        // Exact assertions for formatted content
+        assert_eq!(
+            formatted_with_attributes[0].text,
+            "This has a <span class=\"highlight\" style=\"color:red\">colored span</span> with attributes."
         );
-
-        assert!(formatted_with_attributes[1]
-            .text
-            .contains("<a href=\"https://example.com\" target=\"_blank\">link</a>"));
-        assert!(formatted_with_attributes[2]
-            .text
-            .contains("<b id=\"bold1\" data-test=\"value\">bold with attributes</b>"));
+        assert_eq!(
+            formatted_with_attributes[1].text,
+            "And a <a href=\"https://example.com\" target=\"_blank\">link</a> with multiple attributes."
+        );
+        assert_eq!(
+            formatted_with_attributes[2].text,
+            "And <b id=\"bold1\" data-test=\"value\">bold with attributes</b> should work too."
+        );
 
         // Test with formatting removed
         let plain_parser = TranscriptParser::new(false);
@@ -586,33 +558,18 @@ mod tests {
             plain_with_attributes[2].text
         );
 
-        // Check plain text with flexible assertions
-        assert!(
-            plain_with_attributes[0].text.contains("This has a")
-                && plain_with_attributes[0].text.contains("colored span")
-                && plain_with_attributes[0].text.contains("with attributes"),
-            "Actual: {}",
-            plain_with_attributes[0].text
+        // Exact assertions for plain text content
+        assert_eq!(
+            plain_with_attributes[0].text,
+            "This has a colored span with attributes."
         );
-
-        assert!(
-            plain_with_attributes[1].text.contains("And a")
-                && plain_with_attributes[1].text.contains("link")
-                && plain_with_attributes[1]
-                    .text
-                    .contains("with multiple attributes"),
-            "Actual: {}",
-            plain_with_attributes[1].text
+        assert_eq!(
+            plain_with_attributes[1].text,
+            "And a link (https://example.com) with multiple attributes."
         );
-
-        assert!(
-            plain_with_attributes[2].text.contains("And")
-                && plain_with_attributes[2]
-                    .text
-                    .contains("bold with attributes")
-                && plain_with_attributes[2].text.contains("should work too"),
-            "Actual: {}",
-            plain_with_attributes[2].text
+        assert_eq!(
+            plain_with_attributes[2].text,
+            "And bold with attributes should work too."
         );
     }
 

@@ -34,6 +34,7 @@ regex = "1.10.2"
 quick-xml = { version = "0.37.5", features = ["serialize"] }
 cargo-husky = { version = "1.5.0", features = ["precommit-hook", "run-cargo-fmt", "run-cargo-clippy", "run-cargo-check"] }
 html2text = "0.14.4"
+html-escape = "0.2.13"
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
