@@ -184,3 +184,315 @@ impl VideoDetailsExtractor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_extract_complete_video_details() {
+        // Test case with a complete set of video details
+        let video_id = "dQw4w9WgXcQ";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Rick Astley - Never Gonna Give You Up",
+                "lengthSeconds": "212",
+                "author": "Rick Astley",
+                "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+                "shortDescription": "Rick Astley's official music video for \"Never Gonna Give You Up\"",
+                "viewCount": "1234567890",
+                "keywords": ["Rick", "Astley", "Never", "Gonna", "Give", "You", "Up"],
+                "isLiveContent": false,
+                "thumbnail": {
+                    "thumbnails": [
+                        {
+                            "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
+                            "width": 120,
+                            "height": 90
+                        },
+                        {
+                            "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+                            "width": 320,
+                            "height": 180
+                        },
+                        {
+                            "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                            "width": 480,
+                            "height": 360
+                        }
+                    ]
+                }
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify the extracted data
+        assert_eq!(details.video_id, video_id);
+        assert_eq!(details.title, "Rick Astley - Never Gonna Give You Up");
+        assert_eq!(details.length_seconds, 212);
+        assert_eq!(details.author, "Rick Astley");
+        assert_eq!(details.channel_id, "UCuAXFkgsw1L7xaCfnd5JJOw");
+        assert_eq!(
+            details.short_description,
+            "Rick Astley's official music video for \"Never Gonna Give You Up\""
+        );
+        assert_eq!(details.view_count, "1234567890");
+        assert!(!details.is_live_content);
+
+        // Verify keywords
+        assert!(details.keywords.is_some());
+        let keywords = details.keywords.unwrap();
+        assert_eq!(keywords.len(), 7);
+        assert!(keywords.contains(&"Rick".to_string()));
+        assert!(keywords.contains(&"Astley".to_string()));
+
+        // Verify thumbnails
+        assert_eq!(details.thumbnails.len(), 3);
+        assert_eq!(details.thumbnails[0].width, 120);
+        assert_eq!(details.thumbnails[0].height, 90);
+        assert_eq!(details.thumbnails[1].width, 320);
+        assert_eq!(details.thumbnails[1].height, 180);
+        assert_eq!(details.thumbnails[2].width, 480);
+        assert_eq!(details.thumbnails[2].height, 360);
+    }
+
+    #[test]
+    fn test_extract_video_details_missing_fields() {
+        // Test with partial data to check defaults
+        let video_id = "partial_video";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Partial Video",
+                // Missing many fields that should use defaults
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify the extracted data and defaults
+        assert_eq!(details.video_id, video_id);
+        assert_eq!(details.title, "Partial Video");
+        assert_eq!(details.length_seconds, 0); // Default
+        assert_eq!(details.author, "Unknown"); // Default
+        assert_eq!(details.channel_id, ""); // Default
+        assert_eq!(details.short_description, ""); // Default
+        assert_eq!(details.view_count, "0"); // Default
+        assert!(!details.is_live_content); // Default
+        assert!(details.keywords.is_none()); // Default
+        assert_eq!(details.thumbnails.len(), 0); // Default empty array
+    }
+
+    #[test]
+    fn test_extract_video_details_fallback_video_id() {
+        // Test that the function uses the provided video_id as fallback
+        let actual_video_id = "actual_video_id";
+        let fallback_video_id = "fallback_video_id";
+
+        let player_response = json!({
+            "videoDetails": {
+                // No videoId field, should use fallback
+                "title": "Test Video"
+            }
+        });
+
+        // Extract video details with fallback id
+        let result =
+            VideoDetailsExtractor::extract_video_details(&player_response, fallback_video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify the video_id falls back to provided argument
+        assert_eq!(details.video_id, fallback_video_id);
+
+        // Now test with actual video_id present
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": actual_video_id,
+                "title": "Test Video"
+            }
+        });
+
+        let result =
+            VideoDetailsExtractor::extract_video_details(&player_response, fallback_video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify the video_id uses the one from the response
+        assert_eq!(details.video_id, actual_video_id);
+    }
+
+    #[test]
+    fn test_extract_video_details_live_content() {
+        // Test with a live video
+        let video_id = "live_video";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Live Stream",
+                "isLiveContent": true
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify live content flag
+        assert!(details.is_live_content);
+    }
+
+    #[test]
+    fn test_extract_video_details_missing_section() {
+        // Test when videoDetails section is completely missing
+        let video_id = "missing_details";
+
+        let player_response = json!({
+            "playerConfig": {
+                "audioConfig": {
+                    "loudnessDb": -18.0,
+                    "perceptualLoudnessDb": -14.0
+                }
+            }
+            // No videoDetails section
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+
+        // Verify it returns an error
+        assert!(result.is_err());
+
+        let error = result.unwrap_err();
+        assert_eq!(error.video_id, video_id);
+        assert!(matches!(
+            error.reason,
+            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable)
+        ));
+    }
+
+    #[test]
+    fn test_extract_video_details_malformed_thumbnails() {
+        // Test with malformed thumbnail data
+        let video_id = "malformed_thumbs";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Test Video",
+                "thumbnail": {
+                    "thumbnails": [
+                        {
+                            // Missing width/height
+                            "url": "https://example.com/thumb.jpg"
+                        },
+                        {
+                            // Missing url
+                            "width": 320,
+                            "height": 180
+                        },
+                        {
+                            // Corrupt width/height (not numbers)
+                            "url": "https://example.com/thumb2.jpg",
+                            "width": "invalid",
+                            "height": "invalid"
+                        },
+                        {
+                            // This one is valid
+                            "url": "https://example.com/thumb3.jpg",
+                            "width": 480,
+                            "height": 360
+                        }
+                    ]
+                }
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify only valid thumbnails are kept
+        assert_eq!(details.thumbnails.len(), 1);
+        assert_eq!(details.thumbnails[0].url, "https://example.com/thumb3.jpg");
+        assert_eq!(details.thumbnails[0].width, 480);
+        assert_eq!(details.thumbnails[0].height, 360);
+    }
+
+    #[test]
+    fn test_extract_video_details_malformed_length() {
+        // Test with non-parseable length
+        let video_id = "bad_length";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Test Video",
+                "lengthSeconds": "not_a_number"
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify default length is used
+        assert_eq!(details.length_seconds, 0);
+    }
+
+    #[test]
+    fn test_extract_video_details_keyword_filtering() {
+        // Test keyword extraction with some non-string values
+        let video_id = "keyword_test";
+
+        let player_response = json!({
+            "videoDetails": {
+                "videoId": video_id,
+                "title": "Keyword Test",
+                "keywords": [
+                    "valid",
+                    123, // This should be filtered out
+                    "another valid",
+                    null, // This should be filtered out
+                    "final valid"
+                ]
+            }
+        });
+
+        // Extract video details
+        let result = VideoDetailsExtractor::extract_video_details(&player_response, video_id);
+        assert!(result.is_ok());
+
+        let details = result.unwrap();
+
+        // Verify only valid keywords are kept
+        assert!(details.keywords.is_some());
+        let keywords = details.keywords.unwrap();
+        assert_eq!(keywords.len(), 3);
+        assert!(keywords.contains(&"valid".to_string()));
+        assert!(keywords.contains(&"another valid".to_string()));
+        assert!(keywords.contains(&"final valid".to_string()));
+    }
+}
