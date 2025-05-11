@@ -194,3 +194,184 @@ impl CookieJarLoader {
         Ok(Arc::new(jar))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    // Helper function to create a temp file with given content
+    fn create_temp_file(content: &str) -> NamedTempFile {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        file.flush().unwrap();
+        file
+    }
+
+    #[test]
+    fn test_load_valid_cookie_file() {
+        // Create a temporary file with valid cookie content
+        let content = r#"# Netscape HTTP Cookie File
+# This is a generated cookie file
+.youtube.com	TRUE	/	TRUE	1723157402	SID	TestSessionId123
+.youtube.com	TRUE	/	TRUE	1723231432	HSID	TestHash456
+"#;
+        let file = create_temp_file(content);
+
+        // Test loading the cookie jar
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+        assert!(result.is_ok(), "Should successfully load valid cookie file");
+    }
+
+    #[test]
+    fn test_load_nonexistent_file() {
+        // Test with a path that doesn't exist
+        let non_existent_path = Path::new("/this/path/does/not/exist.txt");
+
+        let result = CookieJarLoader::load_cookie_jar(non_existent_path);
+
+        assert!(result.is_err(), "Should fail with non-existent file");
+        match result {
+            Err(CookieError::PathInvalid(_)) => {
+                // Expected error
+            }
+            _ => panic!("Expected PathInvalid error for non-existent file"),
+        }
+    }
+
+    #[test]
+    fn test_load_empty_file() {
+        // Create an empty temporary file
+        let file = create_temp_file("");
+
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+
+        assert!(result.is_err(), "Should fail with empty file");
+        match result {
+            Err(CookieError::Invalid(_)) => {
+                // Expected error
+            }
+            _ => panic!("Expected Invalid error for empty file"),
+        }
+    }
+
+    #[test]
+    fn test_load_file_with_only_comments() {
+        // Create a temporary file with only comments and empty lines
+        let content = r#"# Netscape HTTP Cookie File
+# This file only contains comments
+# No actual cookies here
+
+# Another comment line
+"#;
+        let file = create_temp_file(content);
+
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+
+        assert!(
+            result.is_err(),
+            "Should fail with file containing only comments"
+        );
+        match result {
+            Err(CookieError::Invalid(_)) => {
+                // Expected error
+            }
+            _ => panic!("Expected Invalid error for file with only comments"),
+        }
+    }
+
+    #[test]
+    fn test_load_malformed_cookie_file() {
+        // Create a temporary file with malformed cookie content
+        let content = r#"# Netscape HTTP Cookie File
+# This is a malformed cookie file
+.youtube.com	MISSING_FIELDS
+invalid_format_line
+.google.com	TRUE	/	TRUE	MISSING_NAME_AND_VALUE
+"#;
+        let file = create_temp_file(content);
+
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+
+        assert!(result.is_err(), "Should fail with malformed cookie file");
+        match result {
+            Err(CookieError::Invalid(_)) => {
+                // Expected error
+            }
+            _ => panic!("Expected Invalid error for malformed cookie file"),
+        }
+    }
+
+    #[test]
+    fn test_load_mixed_valid_invalid_cookies() {
+        // Create a temporary file with some valid and some invalid cookies
+        let content = r#"# Netscape HTTP Cookie File
+# This file has mixed valid and invalid cookies
+.youtube.com	TRUE	/	TRUE	1723157402	SID	ValidCookie123
+invalid_line_with_no_tabs
+.google.com	INVALID	FORMAT	MISSING_FIELDS
+.example.com	TRUE	/	TRUE	1723157402	TEST	AnotherValidCookie
+"#;
+        let file = create_temp_file(content);
+
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+        assert!(
+            result.is_ok(),
+            "Should load file with at least some valid cookies"
+        );
+    }
+
+    #[test]
+    fn test_create_cookie_jar() {
+        // Create a temporary file with valid cookie content
+        let content = r#"# Netscape HTTP Cookie File
+.youtube.com	TRUE	/	TRUE	1723157402	SID	TestSessionId123
+"#;
+        let file = create_temp_file(content);
+
+        // Test creating the Arc-wrapped cookie jar
+        let result = CookieJarLoader::create_cookie_jar(file.path());
+        assert!(
+            result.is_ok(),
+            "Should successfully create Arc-wrapped cookie jar"
+        );
+
+        // Verify it's an Arc
+        let _jar = result.unwrap();
+
+        // Just verify that the jar is wrapped in an Arc
+        // We don't test cookie extraction which depends on reqwest internals
+    }
+
+    #[test]
+    fn test_create_cookie_jar_invalid_path() {
+        // Test creating an Arc-wrapped jar from a non-existent path
+        let non_existent_path = Path::new("/this/path/does/not/exist.txt");
+
+        let result = CookieJarLoader::create_cookie_jar(non_existent_path);
+
+        assert!(result.is_err(), "Should fail with non-existent file");
+        match result {
+            Err(CookieError::PathInvalid(_)) => {
+                // Expected error
+            }
+            _ => panic!("Expected PathInvalid error for non-existent file"),
+        }
+    }
+
+    #[test]
+    fn test_secure_vs_insecure_cookies() {
+        // Create a temporary file with both secure and insecure cookies
+        let content = r#"# Netscape HTTP Cookie File
+.example.com	TRUE	/	TRUE	1723157402	SECURE	SecureCookieValue
+.example.com	TRUE	/	FALSE	1723157402	INSECURE	InsecureCookieValue
+"#;
+        let file = create_temp_file(content);
+
+        let result = CookieJarLoader::load_cookie_jar(file.path());
+        assert!(result.is_ok(), "Should successfully load cookie file");
+
+        // We don't test the cookie security aspect which depends on reqwest internals
+    }
+}
