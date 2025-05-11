@@ -20,6 +20,7 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
   - [Fetch microformat data](#fetch-microformat-data)
   - [Fetch streaming data](#fetch-streaming-data)
   - [Fetch all video information at once](#fetch-all-video-information-at-once)
+  - [Customize transcript formatting](#customize-transcript-formatting)
 - [Requirements](#requirements)
 - [Advanced Usage](#advanced-usage)
   - [Using Proxies](#using-proxies)
@@ -40,6 +41,8 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
 - Retrieve streaming formats and quality options for videos
 - Fetch all video information in a single request for optimal performance
 - Support for proxy configuration and cookie authentication
+- Customizable HTML processing with configurable link formatting
+- Robust HTML entity handling and whitespace preservation
 
 ## Installation
 
@@ -53,7 +56,7 @@ Or manually add it to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yt-transcript-rs = "0.1.0"  # Replace with the latest version
+yt-transcript-rs = "0.1.6"  # Replace with the latest version
 ```
 
 ## Usage
@@ -472,6 +475,50 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+### Customize transcript formatting
+
+```rust
+use anyhow::Result;
+use yt_transcript_rs::transcript_parser::TranscriptParser;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Create a transcript parser with default settings (plain text, standard link format)
+    let default_parser = TranscriptParser::new(false);
+    
+    // Create a parser that preserves HTML formatting tags
+    let formatted_parser = TranscriptParser::new(true);
+    
+    // Create a parser with custom link format (Markdown style)
+    let markdown_parser = TranscriptParser::with_config(false, "[{text}]({url})")?;
+    
+    // Create a parser with custom link format (HTML style)
+    let html_parser = TranscriptParser::with_config(false, "<a href=\"{url}\">{text}</a>")?;
+    
+    // Sample HTML content with a link
+    let html = r#"<p>Check out <a href="https://example.com">this link</a> for more info.</p>"#;
+    
+    // Process the HTML with different parsers
+    let default_text = default_parser.html_to_plain_text(html);
+    let formatted_text = formatted_parser.process_with_formatting(html);
+    let markdown_text = markdown_parser.html_to_plain_text(html);
+    let html_text = html_parser.html_to_plain_text(html);
+    
+    println!("Default format: {}", default_text);
+    println!("Preserved HTML: {}", formatted_text);
+    println!("Markdown links: {}", markdown_text);
+    println!("HTML links: {}", html_text);
+    
+    Ok(())
+}
+```
+
+This feature is particularly useful when you need to:
+- Format transcript links according to specific output needs
+- Create transcripts for different display contexts (web, terminal, documents)
+- Preserve certain HTML tags for styling while removing others
+- Ensure proper entity decoding for symbols like apostrophes and quotes
 
 ## Requirements
 

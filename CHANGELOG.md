@@ -4,6 +4,25 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.6] - 2025-05-11
+
+### Added
+- Improved HTML to text conversion with the Scraper library
+- Added configurable link formatting with customizable templates
+- Added `with_config` method to TranscriptParser for link format customization
+
+### Changed
+- Replaced manual character-by-character HTML parsing with Scraper-based approach
+- Enhanced HTML entity handling for better accuracy
+- Improved whitespace preservation in transcript text
+- Simplified code structure for better maintainability
+- Optimized link format processing for better readability
+
+### Fixed
+- Fixed spacing issues around HTML tags
+- Fixed incorrect HTML entity decoding (particularly for apostrophes and quotes)
+- Fixed inconsistent whitespace handling in parsed transcripts
+
 ## [0.1.5] - 2025-05-10
 
 ### Added
@@ -134,6 +153,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced complex look-ahead regex patterns
 - Fixed various warnings and unused imports/variables
 
+[0.1.6]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.6
 [0.1.5]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.5
 [0.1.4]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.4
 [0.1.3]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.3

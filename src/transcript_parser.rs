@@ -64,6 +64,8 @@ pub struct TranscriptParser {
     preserve_formatting: bool,
     /// Regex pattern for matching HTML tags
     html_regex: Regex,
+    /// Format for link processing (default is "{text} ({url})")
+    link_format: String,
 }
 
 impl TranscriptParser {
@@ -95,6 +97,44 @@ impl TranscriptParser {
         "a",      // hyperlink
     ];
 
+    /// Creates a new transcript parser with additional configuration options.
+    ///
+    /// # Parameters
+    ///
+    /// * `preserve_formatting` - If `true`, certain HTML formatting tags (like bold, italic) will be
+    ///   kept in the transcript. If `false`, all HTML tags will be removed.
+    /// * `link_format` - A format string for rendering links. Must contain `{text}` and `{url}` placeholders.
+    ///   For example, "{text} ({url})" will render as "Google (https://google.com)".
+    ///
+    /// # Returns
+    ///
+    /// A new `TranscriptParser` instance configured according to the preferences.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use yt_transcript_rs::transcript_parser::TranscriptParser;
+    /// # let result = TranscriptParser::with_config(false, "[{text}]({url})");
+    /// ```
+    pub fn with_config(
+        preserve_formatting: bool,
+        link_format: &str,
+    ) -> Result<Self, anyhow::Error> {
+        if !link_format.contains("{text}") || !link_format.contains("{url}") {
+            return Err(anyhow::anyhow!(
+                "Link format must contain {{text}} and {{url}} placeholders"
+            ));
+        }
+
+        let html_regex = Regex::new(r"<[^>]*>").unwrap();
+
+        Ok(Self {
+            preserve_formatting,
+            html_regex,
+            link_format: link_format.to_string(),
+        })
+    }
+
     /// Creates a new transcript parser.
     ///
     /// # Parameters
@@ -123,6 +163,7 @@ impl TranscriptParser {
         Self {
             preserve_formatting,
             html_regex,
+            link_format: "{text} ({url})".to_string(),
         }
     }
 
@@ -282,7 +323,7 @@ impl TranscriptParser {
         // Parse the HTML fragment
         let fragment = Html::parse_fragment(&html_string);
 
-        // For links, we want special handling to format them as "text (url)"
+        // Create the link selector
         let link_selector = Selector::parse("a").unwrap();
 
         // Extract links and replace them in the text
@@ -292,10 +333,12 @@ impl TranscriptParser {
 
                 // Only process non-empty links
                 if !link_text.is_empty() && !href.is_empty() {
-                    // Format as: text (url)
+                    // Format link according to configured format
                     let link_html = link.html();
-                    // Replace the link with the formatted version in the original HTML
-                    let formatted = format!("{} ({})", link_text, href);
+                    let formatted = self
+                        .link_format
+                        .replace("{text}", &link_text)
+                        .replace("{url}", href);
                     html_string = html_string.replace(&link_html, &formatted);
                 }
             }

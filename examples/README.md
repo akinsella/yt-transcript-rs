@@ -219,12 +219,22 @@ This all-in-one approach is ideal for applications that need comprehensive video
 cargo run --example transcript_parser_demo
 ```
 
-This example demonstrates the transcript parser functionality, which uses quick-xml for efficient XML deserialization. It shows:
+This example demonstrates the transcript parser functionality, which now uses the Scraper library for robust HTML parsing. It shows:
 
 1. How to parse XML transcript data into structured snippets
 2. How to preserve or strip HTML formatting tags in transcript text
-3. How to work with timing information (start times and durations)
-4. How to iterate over parsed transcript snippets and display them
-5. How to calculate aggregate statistics (total duration)
+3. How to configure custom link formatting (default, Markdown-style, HTML-style, etc.)
+4. How to work with timing information (start times and durations)
+5. How to iterate over parsed transcript snippets and display them
+6. How to handle HTML entities and preserve proper spacing in transcript text
+7. How to calculate aggregate statistics (total duration)
 
-The transcript parser is designed to be fast and memory-efficient, using serde deserialization with quick-xml. This approach is ideal for processing large transcript files and enables serialization/deserialization support for transcript data. 
+The transcript parser is designed to be fast, robust, and memory-efficient, using quick-xml for XML parsing and Scraper for HTML processing. Key improvements in the latest version include:
+
+- Better handling of HTML entities (apostrophes, quotes, etc.) 
+- Customizable link formatting with templates
+- Improved whitespace preservation
+- Selective preservation of formatting tags
+- Simplified HTML-to-text conversion
+
+This approach is ideal for processing large transcript files and enables serialization/deserialization support for transcript data. 
