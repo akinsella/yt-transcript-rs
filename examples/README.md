@@ -211,4 +211,20 @@ Additionally, the example demonstrates how to:
 6. Deserialize it back into a fully functional object
 7. Use the deserialized data to access transcripts
 
-This all-in-one approach is ideal for applications that need comprehensive video information with optimal performance. It reduces network overhead and provides a complete picture of a video's metadata in a single operation. The serialization support enables caching video information, sending it between systems, or storing it in databases. 
+This all-in-one approach is ideal for applications that need comprehensive video information with optimal performance. It reduces network overhead and provides a complete picture of a video's metadata in a single operation. The serialization support enables caching video information, sending it between systems, or storing it in databases.
+
+### Transcript Parser Demo
+
+```bash
+cargo run --example transcript_parser_demo
+```
+
+This example demonstrates the transcript parser functionality, which uses quick-xml for efficient XML deserialization. It shows:
+
+1. How to parse XML transcript data into structured snippets
+2. How to preserve or strip HTML formatting tags in transcript text
+3. How to work with timing information (start times and durations)
+4. How to iterate over parsed transcript snippets and display them
+5. How to calculate aggregate statistics (total duration)
+
+The transcript parser is designed to be fast and memory-efficient, using serde deserialization with quick-xml. This approach is ideal for processing large transcript files and enables serialization/deserialization support for transcript data. 
