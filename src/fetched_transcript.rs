@@ -284,3 +284,148 @@ impl<'a> IntoIterator for &'a FetchedTranscript {
         self.snippets.iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // Helper function to create a test transcript
+    fn create_test_transcript() -> FetchedTranscript {
+        FetchedTranscript {
+            snippets: vec![
+                FetchedTranscriptSnippet {
+                    text: "Hello world".to_string(),
+                    start: 0.0,
+                    duration: 3.5,
+                },
+                FetchedTranscriptSnippet {
+                    text: "This is a test".to_string(),
+                    start: 3.5,
+                    duration: 2.8,
+                },
+                FetchedTranscriptSnippet {
+                    text: "of the transcript system".to_string(),
+                    start: 6.3,
+                    duration: 4.2,
+                },
+            ],
+            video_id: "test123".to_string(),
+            language: "English".to_string(),
+            language_code: "en".to_string(),
+            is_generated: false,
+        }
+    }
+
+    #[test]
+    fn test_to_raw_data() {
+        let transcript = create_test_transcript();
+        let raw_data = transcript.to_raw_data();
+
+        assert_eq!(raw_data.len(), 3);
+
+        // Check first entry
+        assert_eq!(raw_data[0].get("text").unwrap(), &json!("Hello world"));
+        assert_eq!(raw_data[0].get("start").unwrap(), &json!(0.0));
+        assert_eq!(raw_data[0].get("duration").unwrap(), &json!(3.5));
+
+        // Check last entry
+        assert_eq!(
+            raw_data[2].get("text").unwrap(),
+            &json!("of the transcript system")
+        );
+        assert_eq!(raw_data[2].get("start").unwrap(), &json!(6.3));
+        assert_eq!(raw_data[2].get("duration").unwrap(), &json!(4.2));
+    }
+
+    #[test]
+    fn test_text() {
+        let transcript = create_test_transcript();
+        let full_text = transcript.text();
+
+        assert_eq!(
+            full_text,
+            "Hello world This is a test of the transcript system"
+        );
+    }
+
+    #[test]
+    fn test_parts() {
+        let transcript = create_test_transcript();
+        let parts = transcript.parts();
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(parts[0].text, "Hello world");
+        assert_eq!(parts[1].start, 3.5);
+        assert_eq!(parts[2].duration, 4.2);
+    }
+
+    #[test]
+    fn test_language_getters() {
+        let transcript = create_test_transcript();
+
+        assert_eq!(transcript.language(), "English");
+        assert_eq!(transcript.language_code(), "en");
+        assert_eq!(transcript.is_generated(), false);
+    }
+
+    #[test]
+    fn test_duration() {
+        let transcript = create_test_transcript();
+
+        // Last entry starts at 6.3 with duration 4.2, so total should be 10.5
+        assert_eq!(transcript.duration(), 10.5);
+
+        // Test empty transcript
+        let empty_transcript = FetchedTranscript {
+            snippets: vec![],
+            video_id: "empty123".to_string(),
+            language: "English".to_string(),
+            language_code: "en".to_string(),
+            is_generated: false,
+        };
+
+        assert_eq!(empty_transcript.duration(), 0.0);
+    }
+
+    #[test]
+    fn test_into_iterator() {
+        let transcript = create_test_transcript();
+
+        // Test by_ref iterator
+        let mut count = 0;
+        for segment in &transcript {
+            count += 1;
+            assert!(segment.start >= 0.0);
+            assert!(segment.duration > 0.0);
+            assert!(!segment.text.is_empty());
+        }
+        assert_eq!(count, 3);
+
+        // Test consuming iterator
+        let segments: Vec<FetchedTranscriptSnippet> = transcript.into_iter().collect();
+        assert_eq!(segments.len(), 3);
+        assert_eq!(segments[0].text, "Hello world");
+        assert_eq!(segments[1].text, "This is a test");
+        assert_eq!(segments[2].text, "of the transcript system");
+    }
+
+    #[test]
+    fn test_serialization() {
+        let transcript = create_test_transcript();
+
+        // Test serialization
+        let serialized = serde_json::to_string(&transcript).unwrap();
+        assert!(serialized.contains("\"video_id\":\"test123\""));
+        assert!(serialized.contains("\"language\":\"English\""));
+        assert!(serialized.contains("\"language_code\":\"en\""));
+        assert!(serialized.contains("\"is_generated\":false"));
+
+        // Test deserialization
+        let deserialized: FetchedTranscript = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.video_id, "test123");
+        assert_eq!(deserialized.language, "English");
+        assert_eq!(deserialized.snippets.len(), 3);
+        assert_eq!(deserialized.snippets[0].text, "Hello world");
+    }
+}
