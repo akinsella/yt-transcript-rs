@@ -4,12 +4,23 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.7] - 2025-05-12
+
+### Added
+- Added `tempfile` crate as development dependency for cookie jar loader tests
+
+### Fixed
+- Fixed cookie jar loader tests to remove dependency on reqwest's internal cookie handling
+- Updated reqwest dependency to explicitly include the cookies feature
+- Simplified cookie jar tests to focus on core functionality without testing reqwest internals
+
 ## [0.1.6] - 2025-05-11
 
 ### Added
 - Improved HTML to text conversion with the Scraper library
 - Added configurable link formatting with customizable templates
 - Added `with_config` method to TranscriptParser for link format customization
+- Added `tempfile` crate as development dependency for cookie jar loader tests
 
 ### Changed
 - Replaced manual character-by-character HTML parsing with Scraper-based approach
@@ -22,6 +33,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed spacing issues around HTML tags
 - Fixed incorrect HTML entity decoding (particularly for apostrophes and quotes)
 - Fixed inconsistent whitespace handling in parsed transcripts
+- Fixed cookie jar loader tests to remove dependency on reqwest's internal cookie handling
+- Updated reqwest dependency to explicitly include the cookies feature
+- Simplified cookie jar tests to focus on core functionality without testing reqwest internals
 
 ## [0.1.5] - 2025-05-10
 
