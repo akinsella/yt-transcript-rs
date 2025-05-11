@@ -366,7 +366,7 @@ mod tests {
 
         assert_eq!(transcript.language(), "English");
         assert_eq!(transcript.language_code(), "en");
-        assert_eq!(transcript.is_generated(), false);
+        assert!(!transcript.is_generated());
     }
 
     #[test]
