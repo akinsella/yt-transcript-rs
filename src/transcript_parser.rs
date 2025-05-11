@@ -4,6 +4,7 @@ use html_escape::decode_html_entities;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 use regex::Regex;
+use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
@@ -273,72 +274,43 @@ impl TranscriptParser {
     }
 
     /// Converts HTML to plain text while properly handling entities and spacing.
-    /// This is a simplified alternative to using the html2text crate.
+    /// This implementation uses the scraper library for robust HTML parsing.
     fn html_to_plain_text(&self, html: &str) -> String {
-        // Split the HTML into textual content and tags
-        let mut result = String::new();
-        let mut in_tag = false;
-        let mut current_tag = String::new();
-        let mut is_link_tag = false;
-        let mut link_url = String::new();
-        let mut link_text = String::new();
+        // Create a mutable copy of the HTML string
+        let mut html_string = html.to_string();
 
-        // Simple but effective HTML parsing
-        for c in html.chars() {
-            if c == '<' {
-                in_tag = true;
-                current_tag.clear();
-                current_tag.push(c);
-            } else if in_tag && c == '>' {
-                in_tag = false;
-                current_tag.push(c);
+        // Parse the HTML fragment
+        let fragment = Html::parse_fragment(&html_string);
 
-                // Process completed tag
-                if current_tag.starts_with("<a ") {
-                    // Found link opening tag
-                    is_link_tag = true;
-                    link_text.clear();
+        // For links, we want special handling to format them as "text (url)"
+        let link_selector = Selector::parse("a").unwrap();
 
-                    // Extract URL from the tag
-                    if let Some(href_pos) = current_tag.find("href=") {
-                        let after_href = &current_tag[href_pos + 5..];
-                        let quote_char = if after_href.starts_with('"') {
-                            '"'
-                        } else {
-                            '\''
-                        };
-                        if let Some(start_pos) = after_href.find(quote_char) {
-                            if let Some(end_pos) = after_href[start_pos + 1..].find(quote_char) {
-                                link_url =
-                                    after_href[start_pos + 1..start_pos + 1 + end_pos].to_string();
-                            }
-                        }
-                    }
-                } else if current_tag == "</a>" {
-                    // Found link closing tag
-                    is_link_tag = false;
+        // Extract links and replace them in the text
+        for link in fragment.select(&link_selector) {
+            if let Some(href) = link.value().attr("href") {
+                let link_text = link.text().collect::<String>().trim().to_string();
 
-                    // Format as "text (url)" without adding extra spaces
-                    result.push_str(&format!("{} ({})", link_text.trim(), link_url));
+                // Only process non-empty links
+                if !link_text.is_empty() && !href.is_empty() {
+                    // Format as: text (url)
+                    let link_html = link.html();
+                    // Replace the link with the formatted version in the original HTML
+                    let formatted = format!("{} ({})", link_text, href);
+                    html_string = html_string.replace(&link_html, &formatted);
                 }
-                // No automatic space additions
-            } else if in_tag {
-                current_tag.push(c);
-            } else if is_link_tag {
-                // Inside link text
-                link_text.push(c);
-            } else {
-                // Normal text
-                result.push(c);
             }
         }
 
-        // Use html-escape to properly decode all HTML entities
-        let decoded_result = decode_html_entities(&result).to_string();
+        // Re-parse with replaced links
+        let fragment = Html::parse_fragment(&html_string);
+        let text_content = fragment.root_element().text().collect::<Vec<_>>().join("");
+
+        // Decode HTML entities
+        let decoded = decode_html_entities(&text_content).to_string();
 
         // Clean up multiple spaces
         let space_regex = Regex::new(r"\s{2,}").unwrap();
-        let clean_result = space_regex.replace_all(&decoded_result, " ");
+        let clean_result = space_regex.replace_all(&decoded, " ");
 
         // Final trimming
         clean_result.trim().to_string()
