@@ -275,3 +275,277 @@ pub type AgeRestricted = CouldNotRetrieveTranscript;
 
 /// Type alias for when YouTube data cannot be parsed
 pub type YouTubeDataUnparsable = CouldNotRetrieveTranscript;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::any::Any;
+    use std::collections::HashMap;
+
+    // Mock implementation for testing
+    #[derive(Debug)]
+    struct MockProxy;
+
+    impl ProxyConfig for MockProxy {
+        fn to_requests_dict(&self) -> HashMap<String, String> {
+            HashMap::new()
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+    }
+
+    #[test]
+    fn test_build_error_message_no_reason() {
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: None,
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("dQw4w9WgXcQ"));
+        // Should be a simple message without additional cause
+        assert!(!message.contains("This is most likely caused by"));
+    }
+
+    #[test]
+    fn test_build_error_message_transcripts_disabled() {
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::TranscriptsDisabled),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("Subtitles are disabled"));
+    }
+
+    #[test]
+    fn test_build_error_message_no_transcript_found() {
+        let transcript_list = TranscriptList {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            manually_created_transcripts: HashMap::new(),
+            generated_transcripts: HashMap::new(),
+            translation_languages: vec![],
+        };
+
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::NoTranscriptFound {
+                requested_language_codes: vec!["fr".to_string(), "es".to_string()],
+                transcript_data: transcript_list,
+            }),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("No transcripts were found"));
+        assert!(message.contains("fr"));
+        assert!(message.contains("es"));
+    }
+
+    #[test]
+    fn test_build_error_message_video_unavailable() {
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::VideoUnavailable),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("video is no longer available"));
+    }
+
+    #[test]
+    fn test_build_error_message_video_unplayable() {
+        // Test with reason and sub-reasons
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::VideoUnplayable {
+                reason: Some("Content is private".to_string()),
+                sub_reasons: vec![
+                    "The owner has made this content private".to_string(),
+                    "You need permission to access".to_string(),
+                ],
+            }),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("video is unplayable"));
+        assert!(message.contains("Content is private"));
+        assert!(message.contains("The owner has made this content private"));
+        assert!(message.contains("You need permission to access"));
+
+        // Test with no reason (just sub-reasons)
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::VideoUnplayable {
+                reason: None,
+                sub_reasons: vec!["Region restricted".to_string()],
+            }),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("No reason specified"));
+        assert!(message.contains("Region restricted"));
+
+        // Test with reason but no sub-reasons
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::VideoUnplayable {
+                reason: Some("Premium content".to_string()),
+                sub_reasons: vec![],
+            }),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Premium content"));
+        assert!(!message.contains("Additional Details"));
+    }
+
+    #[test]
+    fn test_build_error_message_ip_blocked() {
+        // Without proxy config
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::IpBlocked(None)),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("YouTube is blocking requests from your IP"));
+        assert!(message.contains("Ip blocked"));
+
+        // With MockProxy
+        let mock_proxy = Box::new(MockProxy);
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::IpBlocked(Some(
+                mock_proxy,
+            ))),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("YouTube is blocking requests from your IP"));
+    }
+
+    #[test]
+    fn test_build_error_message_request_blocked() {
+        // Without proxy config
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::RequestBlocked(None)),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("YouTube is blocking requests from your IP"));
+        assert!(message.contains("Request blocked"));
+
+        // With MockProxy
+        let mock_proxy = Box::new(MockProxy);
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::RequestBlocked(Some(
+                mock_proxy,
+            ))),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("YouTube is blocking requests from your IP"));
+    }
+
+    #[test]
+    fn test_build_error_message_translation_errors() {
+        // TranslationUnavailable
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::TranslationUnavailable(
+                "Manual transcripts cannot be translated".to_string(),
+            )),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("transcript cannot be translated"));
+        assert!(message.contains("Manual transcripts cannot be translated"));
+
+        // TranslationLanguageUnavailable
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(
+                CouldNotRetrieveTranscriptReason::TranslationLanguageUnavailable(
+                    "Klingon is not supported".to_string(),
+                ),
+            ),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("translation language is not available"));
+        assert!(message.contains("Klingon is not supported"));
+    }
+
+    #[test]
+    fn test_build_error_message_misc_errors() {
+        // FailedToCreateConsentCookie
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::FailedToCreateConsentCookie),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("Failed to automatically give consent"));
+
+        // YouTubeRequestFailed
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
+                "Connection timed out".to_string(),
+            )),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("Failed to make a request to YouTube"));
+        assert!(message.contains("Connection timed out"));
+
+        // InvalidVideoId
+        let error = CouldNotRetrieveTranscript {
+            video_id: "invalid".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::InvalidVideoId),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("invalid video id"));
+
+        // AgeRestricted
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::AgeRestricted),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("age-restricted"));
+        assert!(message.contains("authenticate"));
+
+        // YouTubeDataUnparsable
+        let error = CouldNotRetrieveTranscript {
+            video_id: "dQw4w9WgXcQ".to_string(),
+            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+        };
+
+        let message = error.build_error_message();
+        assert!(message.contains("Could not retrieve a transcript"));
+        assert!(message.contains("not parsable"));
+        assert!(message.contains("open an issue"));
+    }
+}
