@@ -6,7 +6,6 @@ use crate::js_var_parser::JsVarParser;
 use crate::microformat_extractor::MicroformatExtractor;
 use crate::models::{MicroformatData, StreamingData, VideoDetails, VideoInfos};
 use crate::playability_asserter::PlayabilityAsserter;
-use crate::proxies::ProxyConfig;
 use crate::streaming_data_extractor::StreamingDataExtractor;
 use crate::transcript_list::TranscriptList;
 use crate::video_details_extractor::VideoDetailsExtractor;
@@ -54,28 +53,19 @@ impl VideoDataFetcher {
     ///
     /// ```rust,no_run
     /// # use reqwest::Client;
-    /// # use yt_transcript_rs::proxies::GenericProxyConfig;
     /// # use yt_transcript_rs::video_data_fetcher::VideoDataFetcher;
     /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// // Create a client
     /// let client = Client::new();
-    ///
-    /// // Create a proxy configuration (optional)
-    /// let proxy_config = GenericProxyConfig::new(
-    ///     Some("http://proxy.example.com:8080".to_string()),
-    ///     None
-    /// )?;
-    ///
     /// // Create the fetcher
     /// let fetcher = VideoDataFetcher::new(
-    ///     client,
-    ///     Some(Box::new(proxy_config))
+    ///     client
     /// );
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(client: Client, proxy_config: Option<Box<dyn ProxyConfig + Send + Sync>>) -> Self {
-        let page_fetcher = YoutubePageFetcher::new(client.clone(), proxy_config);
+    pub fn new(client: Client) -> Self {
+        let page_fetcher = YoutubePageFetcher::new(client.clone());
 
         Self {
             client,

@@ -3,3 +3,4 @@
 target
 lcov.info
 src/test/resources/videos
+res

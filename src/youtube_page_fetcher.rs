@@ -1,7 +1,7 @@
 /// YouTube page fetching functionality.
 ///
 /// This module provides utilities to fetch YouTube video pages while handling various
-/// regional restrictions, proxy configurations, and cookie consent requirements that
+/// regional restrictions, and cookie consent requirements that
 /// may be encountered when accessing YouTube content.
 ///
 /// It's primarily used by the transcript fetching components to access the initial
@@ -11,7 +11,6 @@ use reqwest::header;
 use reqwest::{Client, StatusCode, Url};
 
 use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
-use crate::proxies::ProxyConfig;
 
 /// The URL template for YouTube video watch pages.
 ///
@@ -19,12 +18,11 @@ use crate::proxies::ProxyConfig;
 pub const WATCH_URL: &str = "https://www.youtube.com/watch?v={video_id}";
 
 /// Responsible for fetching YouTube video pages and handling special cases
-/// like cookie consent, region restrictions, and proxy management.
+/// like cookie consent, region restrictions.
 ///
 /// # Features
 ///
 /// * Automatically handles YouTube cookie consent forms for regions requiring consent (e.g., EU)
-/// * Supports proxy configurations for accessing region-restricted content
 /// * Provides detailed error information when requests fail
 /// * Uses proper HTTP headers to improve success rates
 ///
@@ -34,9 +32,9 @@ pub const WATCH_URL: &str = "https://www.youtube.com/watch?v={video_id}";
 /// # use reqwest::Client;
 /// # use yt_transcript_rs::youtube_page_fetcher::YoutubePageFetcher;
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// // Create a fetcher with default client and no proxy
+/// // Create a fetcher with default client
 /// let client = Client::new();
-/// let fetcher = YoutubePageFetcher::new(client, None);
+/// let fetcher = YoutubePageFetcher::new(client);
 ///
 /// // Fetch a YouTube video page
 /// let video_id = "dQw4w9WgXcQ";
@@ -50,18 +48,14 @@ pub const WATCH_URL: &str = "https://www.youtube.com/watch?v={video_id}";
 pub struct YoutubePageFetcher {
     /// HTTP client used for making requests to YouTube
     client: Client,
-
-    /// Optional proxy configuration for accessing region-restricted content
-    proxy_config: Option<Box<dyn ProxyConfig + Send + Sync>>,
 }
 
 impl YoutubePageFetcher {
-    /// Creates a new page fetcher with the provided HTTP client and proxy configuration.
+    /// Creates a new page fetcher with the provided HTTP client.
     ///
     /// # Parameters
     ///
     /// * `client` - A configured reqwest HTTP client for making requests
-    /// * `proxy_config` - Optional proxy configuration for routing requests through a proxy
     ///
     /// # Returns
     ///
@@ -72,31 +66,22 @@ impl YoutubePageFetcher {
     /// ```rust,no_run
     /// # use reqwest::{Client, ClientBuilder};
     /// # use yt_transcript_rs::youtube_page_fetcher::YoutubePageFetcher;
-    /// # use yt_transcript_rs::proxies::GenericProxyConfig;
     /// # fn example() {
-    /// // Create with default client, no proxy
+    /// // Create with default client
     /// let client = Client::new();
-    /// let basic_fetcher = YoutubePageFetcher::new(client, None);
+    /// let basic_fetcher = YoutubePageFetcher::new(client);
     ///
-    /// // Create with a custom client and proxy configuration
+    /// // Create with a custom client
     /// let custom_client = ClientBuilder::new()
     ///     .timeout(std::time::Duration::from_secs(30))
     ///     .build()
     ///     .unwrap();
-    ///     
-    /// let proxy_config = Box::new(GenericProxyConfig::new(
-    ///     Some("http://user:pass@proxy.example.com:8080".to_string()),
-    ///     None
-    /// ).unwrap());
     ///
-    /// let proxy_fetcher = YoutubePageFetcher::new(custom_client, Some(proxy_config));
+    /// let fetcher = YoutubePageFetcher::new(custom_client);
     /// # }
     /// ```
-    pub fn new(client: Client, proxy_config: Option<Box<dyn ProxyConfig + Send + Sync>>) -> Self {
-        Self {
-            client,
-            proxy_config,
-        }
+    pub fn new(client: Client) -> Self {
+        Self { client }
     }
 
     /// Fetches the HTML content for a YouTube video page.
@@ -130,7 +115,7 @@ impl YoutubePageFetcher {
     /// # use yt_transcript_rs::youtube_page_fetcher::YoutubePageFetcher;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = Client::new();
-    /// let fetcher = YoutubePageFetcher::new(client, None);
+    /// let fetcher = YoutubePageFetcher::new(client);
     ///
     /// // Fetch a regular YouTube video
     /// let video_id = "dQw4w9WgXcQ";
@@ -170,15 +155,10 @@ impl YoutubePageFetcher {
                 if let Some(_status @ (StatusCode::FORBIDDEN | StatusCode::TOO_MANY_REQUESTS)) =
                     e.status()
                 {
-                    // Create either RequestBlocked or IpBlocked error
-                    // We can't clone the proxy_config directly, so we'll just check if it exists
+                    // Create IpBlocked error
                     error = CouldNotRetrieveTranscript {
                         video_id: video_id.to_string(),
-                        reason: if self.proxy_config.is_some() {
-                            Some(CouldNotRetrieveTranscriptReason::RequestBlocked(None))
-                        } else {
-                            Some(CouldNotRetrieveTranscriptReason::IpBlocked(None))
-                        },
+                        reason: Some(CouldNotRetrieveTranscriptReason::IpBlocked(None)),
                     };
                 }
 

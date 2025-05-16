@@ -36,12 +36,18 @@ cargo-husky = { version = "1.5.0", features = ["precommit-hook", "run-cargo-fmt"
 html2text = "0.14.4"
 html-escape = "0.2.13"
 scraper = "0.23.1"
+clap = { version = "4.5.1", features = ["env"] }
+
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
 # Testing dependencies
 mockito = "1.7.0"
 tempfile = "3.19.1"
+dotenvy = "0.15.7"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+clap = { version = "4.5.1", features = ["derive"] }
+
 
 [features]
 default = []

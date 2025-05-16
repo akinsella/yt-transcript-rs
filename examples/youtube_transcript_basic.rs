@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     let api = YouTubeTranscriptApi::new(None, None, None)?;
 
     // Ted Talk video ID
-    let video_id = "nQSDgS8BWx8";
+    let video_id = "XQJhRDbsDzI";
 
     // Language preference (English)
     let languages = &["en"];

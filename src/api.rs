@@ -192,7 +192,7 @@ impl YouTubeTranscriptApi {
         };
 
         #[cfg(not(feature = "ci"))]
-        let fetcher = Arc::new(VideoDataFetcher::new(client.clone(), proxy_config));
+        let fetcher = Arc::new(VideoDataFetcher::new(client.clone()));
 
         Ok(Self {
             #[cfg(not(feature = "ci"))]
