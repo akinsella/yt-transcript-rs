@@ -4,6 +4,27 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.7] - 2025-05-16
+
+### Added
+- Added new example `youtube_offline_extract_infos.rs` for extracting video information from saved HTML files
+- Added new example `youtube_proxy_cli.rs` demonstrating proxy configuration via CLI and environment variables
+- Added new dev dependencies:
+  - `clap` for CLI argument parsing
+  - `dotenvy` for environment variable loading
+  - `tracing-subscriber` for logging
+
+### Changed
+- Simplified proxy handling by removing proxy configuration from core components:
+  - Removed proxy configuration from `VideoDataFetcher`
+  - Removed proxy configuration from `YoutubePageFetcher`
+  - Moved proxy handling to example implementations
+- Updated example `youtube_transcript_basic.rs` with new video ID
+- Enhanced documentation in example files with detailed comments and usage instructions
+
+### Fixed
+- Fixed proxy configuration handling to be more explicit and type-safe
+
 ## [0.1.6] - 2025-05-11
 
 ### Added
@@ -26,7 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed cookie jar loader tests to remove dependency on reqwest's internal cookie handling
 - Updated reqwest dependency to explicitly include the cookies feature
 - Simplified cookie jar tests to focus on core functionality without testing reqwest internals
-
+ 
 ## [0.1.5] - 2025-05-10
 
 ### Added
@@ -157,6 +178,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced complex look-ahead regex patterns
 - Fixed various warnings and unused imports/variables
 
+[0.1.7]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.7
 [0.1.6]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.6
 [0.1.5]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.5
 [0.1.4]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.4
