@@ -682,6 +682,25 @@ async fn main() -> Result<()> {
 
 This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
 
+## Release Process
+
+Releases are automated through GitHub Actions workflows. To create a new release:
+
+1. Update the version in `Cargo.toml`
+2. Update the changelog in `CHANGELOG.md`
+3. Create and push a new tag:
+
+```bash
+VERSION=$(grep '^version = ' Cargo.toml | cut -d'"' -f2)
+git tag v$VERSION && git push origin v$VERSION
+```
+
+This will automatically trigger the release workflow which will:
+- Build the crate
+- Run tests
+- Create a GitHub release
+- Publish to crates.io
+
 ## Contributing
 
 Contributions are welcome! Here's how you can contribute:
@@ -802,4 +821,3 @@ By following these steps, cargo-husky will enforce code quality standards on eve
 
 - [Jonas Depoix](https://github.com/jdepoix) for the original [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) Python library
 - All contributors who have helped improve this library
-
