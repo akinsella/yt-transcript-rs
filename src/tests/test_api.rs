@@ -36,7 +36,7 @@ async fn test_list_transcripts() {
         // The API can fail with YouTubeDataUnparsable, which is acceptable for tests
         // since YouTube regularly changes their API
         match error.reason {
-            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) => {
+            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) => {
                 // This is an acceptable error, test passes
             }
             _ => {
@@ -57,7 +57,7 @@ async fn test_find_transcript() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &transcript_list_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -96,7 +96,7 @@ async fn test_fetch_transcript() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -132,7 +132,7 @@ async fn test_translate_transcript() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &transcript_list_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -178,7 +178,7 @@ async fn test_fetch_non_existent_video() {
     let error = result.unwrap_err();
     match error.reason {
         Some(CouldNotRetrieveTranscriptReason::VideoUnavailable)
-        | Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) => {
+        | Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) => {
             // These are acceptable errors
         }
         _ => panic!("Unexpected error type: {:?}", error),
@@ -196,7 +196,7 @@ async fn test_transcriptlist() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &transcript_list_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             // Skip test
             return;
         }
@@ -222,7 +222,7 @@ async fn test_transcript_formatter() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &transcript_list_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             // Skip test
             return;
         }
@@ -260,7 +260,7 @@ async fn test_preserve_formatting() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &with_formatting_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -277,7 +277,7 @@ async fn test_preserve_formatting() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &without_formatting_result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -309,7 +309,7 @@ async fn test_fetch_microformat() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }
@@ -354,7 +354,7 @@ async fn test_fetch_streaming_data() {
 
     // If YouTube API returns an error, skip this test
     if let Err(error) = &result {
-        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable) = error.reason {
+        if let Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_)) = error.reason {
             return; // Skip test
         }
     }

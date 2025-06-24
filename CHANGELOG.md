@@ -4,6 +4,39 @@ All notable changes to the `yt-transcript-rs` project will be documented in this
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.1.8] - 2025-01-27
+
+### Breaking Changes
+- **Complete API Overhaul**: Replaced the legacy transcript fetching method with YouTube's InnerTube API
+- **Removed Legacy URL Approach**: The old method of using direct transcript URLs has been completely removed as it no longer works due to YouTube's permanent API changes
+
+### Added
+- **InnerTube API Integration**: Added `InnerTubeClient` to use YouTube's internal API exclusively for transcript fetching
+- **Enhanced Error Handling**: Improved error messages with detailed explanations when YouTube API issues occur
+- New dependencies:
+  - `base64` for InnerTube API authentication
+  - `url` for URL parsing in debug utilities
+
+### Changed
+- **Major Architecture Change**: `Transcript::fetch()` method now uses InnerTube API exclusively instead of legacy URLs
+- **Improved Reliability**: Transcript fetching is now consistently reliable since it uses YouTube's internal API
+- Enhanced `YouTubeDataUnparsable` error variant to include detailed error messages
+- Updated all test cases to handle the new error format correctly
+
+### Fixed
+- **Critical Fix**: YouTube transcript fetching now works reliably after YouTube's permanent API changes
+- Fixed empty transcript responses by completely replacing the broken legacy approach
+- Fixed compilation errors in test suite related to error pattern matching
+- Fixed URL parsing dependencies in debug examples
+
+### Technical Details
+- The library now exclusively uses YouTube's InnerTube API:
+  1. Calls InnerTube API to get current transcript URLs
+  2. Extracts caption tracks from the InnerTube response
+  3. Finds matching transcript URLs for the requested language
+  4. Fetches transcript content using the current, authenticated URLs
+- This approach completely bypasses YouTube's broken external API while maintaining full backward compatibility for user code
+
 ## [0.1.7] - 2025-05-16
 
 ### Added
@@ -178,6 +211,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced complex look-ahead regex patterns
 - Fixed various warnings and unused imports/variables
 
+[0.1.8]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.8
 [0.1.7]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.7
 [0.1.6]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.6
 [0.1.5]: https://github.com/akinsella/yt-transcript-rs/releases/tag/v0.1.5

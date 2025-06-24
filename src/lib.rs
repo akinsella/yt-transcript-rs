@@ -105,6 +105,7 @@ pub mod captions_extractor;
 pub mod cookie_jar_loader;
 pub mod errors;
 pub mod fetched_transcript;
+pub mod innertube_client;
 pub mod js_var_parser;
 pub mod microformat_extractor;
 pub mod models;

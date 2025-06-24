@@ -9,6 +9,8 @@
 
 This project is heavily inspired by the Python module [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) originally developed by [Jonas Depoix](https://github.com/jdepoix).
 
+> **📢 Important Note (v0.1.8+)**: Due to YouTube's permanent API changes, this library now uses YouTube's internal InnerTube API exclusively for transcript fetching. This provides more reliable access than the traditional external API approach and requires no special configuration.
+
 ## Table of Contents
 
 - [Features](#features)
@@ -43,6 +45,8 @@ This project is heavily inspired by the Python module [youtube-transcript-api](h
 - Support for proxy configuration and cookie authentication
 - Customizable HTML processing with configurable link formatting
 - Robust HTML entity handling and whitespace preservation
+- **InnerTube API Integration** - Uses YouTube's internal API for reliable transcript access (v0.1.8+)
+- **Future-proof architecture** that bypasses YouTube's external API limitations
 
 ## Installation
 
@@ -56,7 +60,7 @@ Or manually add it to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yt-transcript-rs = "0.1.6"  # Replace with the latest version
+yt-transcript-rs = "0.1.8"  # Replace with the latest version
 ```
 
 ## Usage

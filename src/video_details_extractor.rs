@@ -179,7 +179,9 @@ impl VideoDetailsExtractor {
             }
             None => Err(CouldNotRetrieveTranscript {
                 video_id: video_id.to_string(),
-                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                    "Missing videoDetails section in player response".to_string(),
+                )),
             }),
         }
     }
@@ -385,7 +387,7 @@ mod tests {
         assert_eq!(error.video_id, video_id);
         assert!(matches!(
             error.reason,
-            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable)
+            Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(_))
         ));
     }
 

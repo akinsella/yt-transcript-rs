@@ -140,7 +140,7 @@ pub enum CouldNotRetrieveTranscriptReason {
     AgeRestricted,
 
     /// The YouTube data structure couldn't be parsed
-    YouTubeDataUnparsable,
+    YouTubeDataUnparsable(String),
 }
 
 impl CouldNotRetrieveTranscript {
@@ -225,8 +225,8 @@ impl CouldNotRetrieveTranscript {
                     CouldNotRetrieveTranscriptReason::AgeRestricted => {
                         "This video is age-restricted. Therefore, you will have to authenticate to be able to retrieve transcripts for it. You will have to provide a cookie to authenticate yourself.".to_string()
                     },
-                    CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable => {
-                        "The data required to fetch the transcript is not parsable. This should not happen, please open an issue (make sure to include the video ID)!".to_string()
+                    CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(details) => {
+                        format!("The data required to fetch the transcript is not parsable: {}. This should not happen, please open an issue (make sure to include the video ID)!", details)
                     },
                 };
 
@@ -540,7 +540,9 @@ mod tests {
         // YouTubeDataUnparsable
         let error = CouldNotRetrieveTranscript {
             video_id: "dQw4w9WgXcQ".to_string(),
-            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                "Invalid XML format".to_string(),
+            )),
         };
 
         let message = error.build_error_message();

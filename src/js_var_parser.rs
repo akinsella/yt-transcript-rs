@@ -198,7 +198,9 @@ impl JsVarParser {
             if parts.len() <= 1 {
                 return Err(CouldNotRetrieveTranscript {
                     video_id: video_id.to_string(),
-                    reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                    reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                        format!("JavaScript variable '{}' not found in HTML", self.var_name),
+                    )),
                 });
             }
         }
@@ -217,7 +219,12 @@ impl JsVarParser {
                 None => {
                     return Err(CouldNotRetrieveTranscript {
                         video_id: video_id.to_string(),
-                        reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                        reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                            format!(
+                                "Opening brace not found after JavaScript variable '{}'",
+                                self.var_name
+                            ),
+                        )),
                     });
                 }
             }
@@ -252,7 +259,9 @@ impl JsVarParser {
                     // Unexpected end of string
                     return Err(CouldNotRetrieveTranscript {
                         video_id: video_id.to_string(),
-                        reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                        reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                            "Unexpected end of HTML while parsing JavaScript variable".to_string(),
+                        )),
                     });
                 }
             }
@@ -265,7 +274,9 @@ impl JsVarParser {
             Ok(json) => Ok(json),
             Err(_) => Err(CouldNotRetrieveTranscript {
                 video_id: video_id.to_string(),
-                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                    "Extracted JavaScript variable is not valid JSON".to_string(),
+                )),
             }),
         }
     }
@@ -327,7 +338,12 @@ impl JsVarParser {
         // If we get here, we couldn't find or parse the variable
         Err(CouldNotRetrieveTranscript {
             video_id: video_id.to_string(),
-            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+            reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                format!(
+                    "Could not find or parse JavaScript variable '{}' using regex patterns",
+                    self.var_name
+                ),
+            )),
         })
     }
 }

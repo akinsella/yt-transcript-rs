@@ -4,6 +4,7 @@ use std::fmt;
 
 use crate::errors::{CouldNotRetrieveTranscript, CouldNotRetrieveTranscriptReason};
 use crate::fetched_transcript::FetchedTranscript;
+use crate::innertube_client::InnerTubeClient;
 use crate::models::TranslationLanguage;
 use crate::transcript_parser::TranscriptParser;
 
@@ -143,7 +144,8 @@ impl Transcript {
     /// Fetches the actual transcript content from YouTube.
     ///
     /// This method retrieves the transcript text and timing information from YouTube
-    /// and returns it as a structured `FetchedTranscript` object.
+    /// using YouTube's internal InnerTube API, which provides reliable access to
+    /// transcript data even when YouTube updates their external API requirements.
     ///
     /// # Parameters
     ///
@@ -194,15 +196,86 @@ impl Transcript {
         client: &Client,
         preserve_formatting: bool,
     ) -> Result<FetchedTranscript, CouldNotRetrieveTranscript> {
+        // Use InnerTube API directly - this is now the only reliable method
+        let innertube_client = InnerTubeClient::new(client.clone());
+
+        // Get fresh transcript URLs from InnerTube API
+        let data = innertube_client
+            .get_transcript_list(&self.video_id)
+            .await
+            .map_err(|e| CouldNotRetrieveTranscript {
+                video_id: self.video_id.clone(),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
+                    format!("InnerTube API failed: {}", e),
+                )),
+            })?;
+
+        // Extract caption tracks from the InnerTube response
+        let captions = data
+            .get("captions")
+            .ok_or_else(|| CouldNotRetrieveTranscript {
+                video_id: self.video_id.clone(),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                    "No captions found in InnerTube response".to_string(),
+                )),
+            })?;
+
+        let player_captions_renderer =
+            captions
+                .get("playerCaptionsTracklistRenderer")
+                .ok_or_else(|| CouldNotRetrieveTranscript {
+                    video_id: self.video_id.clone(),
+                    reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                        "No playerCaptionsTracklistRenderer found".to_string(),
+                    )),
+                })?;
+
+        let caption_tracks = player_captions_renderer
+            .get("captionTracks")
+            .and_then(|ct| ct.as_array())
+            .ok_or_else(|| CouldNotRetrieveTranscript {
+                video_id: self.video_id.clone(),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                    "No caption tracks found in InnerTube response".to_string(),
+                )),
+            })?;
+
+        // Find the matching transcript URL for our language
+        let mut matching_url = None;
+        for track in caption_tracks {
+            if let Some(language_code) = track.get("languageCode").and_then(|lc| lc.as_str()) {
+                if language_code == self.language_code {
+                    if let Some(base_url) = track.get("baseUrl").and_then(|url| url.as_str()) {
+                        matching_url = Some(base_url.to_string());
+                        break;
+                    }
+                }
+            }
+        }
+
+        let transcript_url = matching_url.ok_or_else(|| CouldNotRetrieveTranscript {
+            video_id: self.video_id.clone(),
+            reason: Some(CouldNotRetrieveTranscriptReason::NoTranscriptFound {
+                requested_language_codes: vec![self.language_code.clone()],
+                transcript_data: crate::transcript_list::TranscriptList::new(
+                    self.video_id.clone(),
+                    HashMap::new(),
+                    HashMap::new(),
+                    vec![],
+                ),
+            }),
+        })?;
+
+        // Fetch transcript content using the fresh URL from InnerTube
         let response =
             client
-                .get(&self.url)
+                .get(&transcript_url)
                 .send()
                 .await
                 .map_err(|e| CouldNotRetrieveTranscript {
                     video_id: self.video_id.clone(),
                     reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
-                        e.to_string(),
+                        format!("Failed to fetch transcript: {}", e),
                     )),
                 })?;
 
@@ -210,7 +283,7 @@ impl Transcript {
             return Err(CouldNotRetrieveTranscript {
                 video_id: self.video_id.clone(),
                 reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
-                    format!("YouTube returned status code: {}", response.status()),
+                    format!("YouTube returned status code {}", response.status()),
                 )),
             });
         }
@@ -221,15 +294,26 @@ impl Transcript {
             .map_err(|e| CouldNotRetrieveTranscript {
                 video_id: self.video_id.clone(),
                 reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
-                    e.to_string(),
+                    format!("Failed to read transcript response: {}", e),
                 )),
             })?;
 
-        let snippets = TranscriptParser::new(preserve_formatting)
-            .parse(&text.clone())
-            .map_err(|_| CouldNotRetrieveTranscript {
+        if text.is_empty() {
+            return Err(CouldNotRetrieveTranscript {
                 video_id: self.video_id.clone(),
-                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeRequestFailed(
+                    "YouTube returned empty transcript content. This may indicate additional restrictions or API changes.".to_string()
+                )),
+            });
+        }
+
+        let snippets = TranscriptParser::new(preserve_formatting)
+            .parse(&text)
+            .map_err(|e| CouldNotRetrieveTranscript {
+                video_id: self.video_id.clone(),
+                reason: Some(CouldNotRetrieveTranscriptReason::YouTubeDataUnparsable(
+                    format!("Failed to parse transcript XML: {}", e),
+                )),
             })?;
 
         Ok(FetchedTranscript {

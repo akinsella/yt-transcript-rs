@@ -2621,9 +2621,10 @@ dependencies = [
 
 [[package]]
 name = "yt-transcript-rs"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
+ "base64",
  "cargo-husky",
  "chrono",
  "clap",
@@ -2641,6 +2642,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
