@@ -136,7 +136,7 @@ impl YouTubeTranscriptApi {
             Some(client) => client,
             None => {
                 let mut builder = Client::builder()
-                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
                     .default_headers({
                         let mut headers = reqwest::header::HeaderMap::new();
                         headers.insert(

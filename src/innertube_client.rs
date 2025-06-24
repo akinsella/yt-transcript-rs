@@ -39,7 +39,7 @@ impl InnerTubeClient {
             .post(url)
             .json(&payload)
             .header("Content-Type", "application/json")
-            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
             .send()
             .await
             .map_err(|e| CouldNotRetrieveTranscript {
@@ -110,7 +110,7 @@ impl InnerTubeClient {
             .post(url)
             .json(&payload)
             .header("Content-Type", "application/json")
-            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
             .send()
             .await
             .map_err(|e| CouldNotRetrieveTranscript {

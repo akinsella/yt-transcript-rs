@@ -46,13 +46,13 @@ async fn main() -> Result<()> {
 
     test_configuration("Enhanced Browser", Some(client), video_id).await;
 
-    // Test 3: Firefox user agent
-    println!("\n3. Testing with Firefox user agent...");
+    // Test 3: Alternative Chrome user agent
+    println!("\n3. Testing with alternative Chrome user agent...");
     let mut headers = HeaderMap::new();
     headers.insert(
         USER_AGENT,
         HeaderValue::from_static(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:132.0) Gecko/20100101 Firefox/132.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
         ),
     );
     headers.insert(
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
         .default_headers(headers)
         .build()?;
 
-    test_configuration("Firefox", Some(client), video_id).await;
+    test_configuration("Alternative Chrome", Some(client), video_id).await;
 
     // Test 4: Test direct URL access with different approaches
     println!("\n4. Testing direct transcript URL access...");
@@ -101,7 +101,7 @@ async fn test_configuration(name: &str, client: Option<reqwest::Client>, video_i
                 transcript_list.transcripts().count()
             );
 
-            if let Ok(transcript) = transcript_list.find_transcript(&["en"]) {
+            if let Ok(_transcript) = transcript_list.find_transcript(&["en"]) {
                 match api.fetch_transcript(video_id, &["en"], false).await {
                     Ok(fetched) => {
                         println!("  ✓ Fetch successful: {} snippets", fetched.snippets.len());

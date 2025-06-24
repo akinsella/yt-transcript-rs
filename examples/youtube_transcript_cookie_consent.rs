@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
     );
 
     // Common consent cookies that YouTube might require
-    let consent_cookies = vec![
+    let consent_cookies = [
         "CONSENT=YES+cb.20210328-17-p0.en+FX+111",
         "SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg", // Consent for data processing
     ];
